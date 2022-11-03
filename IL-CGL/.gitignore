@@ -1,0 +1,4 @@
+data/trained_gaze_models
+
+BC-CGL/model.hdf5
+BC-CGL/predicted_gaze_heatmaps
