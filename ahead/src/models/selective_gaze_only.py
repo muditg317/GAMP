@@ -1,3 +1,4 @@
+import cv2
 import torch
 import numpy as np
 import torch.nn as nn
@@ -87,7 +88,8 @@ class SGAZED_ACTION_SL(nn.Module):
 
         self.conv2 = nn.Conv2d(32, 64, 4, stride=(2, 2))
         self.conv3 = nn.Conv2d(64, 64, 3, stride=(1, 1))
-
+        self.conv4_cgl = nn.Conv2d(64, 1, 1, stride=(1, 1))
+        self.softmax_cgl = nn.Softmax(dim=0)
         self.conv21 = nn.Conv2d(1, 32, 8, stride=(4, 4))
         self.pool2 = nn.MaxPool2d((1, 1), (1, 1), (0, 0), (1, 1))
         # self.pool = lambda x: x
@@ -135,8 +137,10 @@ class SGAZED_ACTION_SL(nn.Module):
         x = self.batch_norm64_2(x)
         # x = self.dropout(x)
 
+        x_cgl = self.softmax_cgl(self.conv4_cgl(x))
         # gaze_overlay forward
         # x_g = self.W * x_g
+
 
         embed = torch.flatten(x, start_dim=1).unsqueeze(1).detach()
 
@@ -172,13 +176,14 @@ class SGAZED_ACTION_SL(nn.Module):
         # combine gaze conv + frame conv
         # x = (x + x_g)
 
+
         x = torch.cat([x, x_g], dim=1)
         # x = x.view(-1, 64 * torch.prod(self.lin_in_shape))
         x = x.flatten(start_dim=1)
         x = self.linear1(x)
         x = self.linear2(x)
         x = self.linear3(x)
-        return x
+        return x, x_cgl
 
     def out_shape(self, layer, in_shape):
         h_in, w_in = in_shape
@@ -199,9 +204,28 @@ class SGAZED_ACTION_SL(nn.Module):
         out_shape = self.out_shape(self.conv3, out_shape)
         return out_shape
 
-    def loss_fn(self, loss_, acts, targets):
+    def loss_fn(self, loss_, acts, targets, feat, x_g):
         ce_loss = loss_(acts, targets).to(device=self.device)
+        cg_loss = self.
         return ce_loss
+
+    def cgl_kl(self, y_true, y_pred):
+        '''CGL loss function'''
+        epsilon = 2.2204e-16  # introduce epsilon to avoid log and division by zero error
+        y_true2 = torch.clip(y_true,epsilon,1)
+        y_pred = torch.clip(y_pred, epsilon, 1)
+        return torch.sum(y_true * torch.log(y_true2 / y_pred))  # for old Keras need axis = [1,2,3]
+
+    def my_softmax(self, x):
+        '''Softmax activation function. Normalize the whole metrics.
+        # Arguments
+            x : Tensor.
+        # Returns
+            Tensor, output of softmax transformation.
+        # Raises
+            ValueError: In case `dim(x) == 1`.
+        '''
+        return nn.functional.Softmax(x, dim=0)
 
     def train_loop(self,
                    opt,
@@ -247,8 +271,8 @@ class SGAZED_ACTION_SL(nn.Module):
 
                 self.opt.zero_grad()
 
-                acts = self.forward(x, x_g)
-                loss = self.loss_fn(loss_, acts, y)
+                acts, feat = self.forward(x, x_g)
+                loss = self.loss_fn(loss_, acts, y, feat, x_g)
                 loss.backward()
                 self.opt.step()
                 self.writer.add_scalar('Loss', loss.data.item(), eix)
@@ -300,7 +324,7 @@ class SGAZED_ACTION_SL(nn.Module):
         with torch.no_grad():
             self.eval()
 
-            acts = self.forward(x_var, xg_var)
+            acts, _ = self.forward(x_var, xg_var)
             acts = torch.softmax(acts, dim=1).argmax()
             self.writer.add_scalars('actions_gate',{'actions':torch.sign(acts).data.item(),'gate_out':self.gate_output})
             if self.gate_output == 0:
@@ -340,6 +364,7 @@ class SGAZED_ACTION_SL(nn.Module):
         with torch.no_grad():
             for i, data in enumerate(self.val_data_iter):
                 x, y, x_g = self.get_data(data)
+
                 if self.gaze_pred_model is not None:
                     with torch.no_grad():
                         x_g = self.gaze_pred_model.infer(x)
@@ -349,11 +374,11 @@ class SGAZED_ACTION_SL(nn.Module):
                         x = x[:, -1].unsqueeze(1)
 
                         x_g = (x * x_g)
-
+                        g_cgl = x_g
                         # x_g = x_g.unsqueeze(1).expand(x.shape)
 
-                acts = self.forward(x, x_g)
-                loss += self.loss_fn(self.loss_, acts, y).data.item()
+                acts, feat = self.forward(x, x_g)
+                loss += self.loss_fn(self.loss_, acts, y, feat).data.item()
 
                 acc += (acts.argmax(dim=1) == y).sum().data.item()
                 ix += y.shape[0]
@@ -381,7 +406,7 @@ class SGAZED_ACTION_SL(nn.Module):
 
                         x_g = (x * x_g)
 
-                acts = self.forward(x, x_g).argmax(dim=1)
+                acts, _ = self.forward(x, x_g).argmax(dim=1)
                 acc += (acts == y).sum().data.item()
                 ix += y.shape[0]
 
