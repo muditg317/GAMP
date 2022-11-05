@@ -88,8 +88,10 @@ class SGAZED_ACTION_SL(nn.Module):
 
         self.conv2 = nn.Conv2d(32, 64, 4, stride=(2, 2))
         self.conv3 = nn.Conv2d(64, 64, 3, stride=(1, 1))
+
         self.conv4_cgl = nn.Conv2d(64, 1, 1, stride=(1, 1))
         self.softmax_cgl = nn.Softmax(dim=0)
+
         self.conv21 = nn.Conv2d(1, 32, 8, stride=(4, 4))
         self.pool2 = nn.MaxPool2d((1, 1), (1, 1), (0, 0), (1, 1))
         # self.pool = lambda x: x
@@ -216,16 +218,12 @@ class SGAZED_ACTION_SL(nn.Module):
         y_pred = torch.clip(y_pred, epsilon, 1)
         return torch.sum(y_true * torch.log(y_true2 / y_pred))  # for old Keras need axis = [1,2,3]
 
-    def my_softmax(self, x):
-        '''Softmax activation function. Normalize the whole metrics.
-        # Arguments
-            x : Tensor.
-        # Returns
-            Tensor, output of softmax transformation.
-        # Raises
-            ValueError: In case `dim(x) == 1`.
-        '''
-        return nn.functional.Softmax(x, dim=0)
+    def resized_heatmap(self, heatmap, size):
+        heatmap = heatmap.squeeze()
+        heatmap = heatmap.cpu().detach().numpy()
+        heatmap = cv2.resize(heatmap, size)
+        heatmap = torch.from_numpy(heatmap).unsqueeze(0).unsqueeze(0)
+        return heatmap
 
     def train_loop(self,
                    opt,
