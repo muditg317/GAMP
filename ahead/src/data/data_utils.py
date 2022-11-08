@@ -5,6 +5,8 @@ from tqdm import tqdm
 import pandas as pd
 from yaml import safe_load
 import h5py
+import sys
+sys.path.append(os.getcwd())
 from src.features.feat_utils import transform_images, fuse_gazes_noop
 from collections import Counter
 import torch
@@ -22,7 +24,9 @@ VALID_ACTIONS = config_data['VALID_ACTIONS']
 
 
 def get_game_entries_(game_dir):
+    print(game_dir)
     game_dir_entries = os.listdir(game_dir)
+    print(game_dir_entries)
     game_runs = []
     game_runs_dirs = []
     game_runs_gaze = []

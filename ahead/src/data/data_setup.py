@@ -20,7 +20,7 @@ for entry in DIRS_REQD:
     if not os.path.exists(entry):
         os.makedirs(entry)
 games = VALID_ACTIONS.keys()
-
+games = ['breakout']
 url_ph = 'https://zenodo.org/record/3451402/files/'
 urls = [url_ph+'action_enums.txt']
 urls += [url_ph+game+'.zip' for game in games]

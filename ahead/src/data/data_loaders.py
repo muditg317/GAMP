@@ -10,6 +10,8 @@ from yaml import safe_load
 import os
 import pandas as pd
 import h5py
+import sys
+sys.path.append(os.getcwd())
 from src.data.data_utils import stack_data, transform_images
 from src.features.feat_utils import fuse_gazes_noop, fuse_gazes
 from torch.utils import data
@@ -190,14 +192,15 @@ def load_hdf_data(
     game_file = os.path.join(PROC_DATA_DIR, game + '.hdf5')
     game_h5_file = h5py.File(game_file, 'r')
     game_data = []
-    if dataset is -1:
-        dataset = list(game_h5_file.keys())
+    
+    if dataset == 'combined':
+        dataset = ['564_RZ_4602455_Jul-31-14-48-16']#list(game_h5_file.keys())
     game_data = {k: [] for k in data_types}
 
     actions = []
     for game_run in dataset:
-        assert game_h5_file.__contains__(game_run), print(
-            game_run, "doesn't exist in game", game)
+        print(dataset,game_run)
+        assert game_h5_file.__contains__(game_run), print(game_run, "doesn't exist in game", game)
         game_run_data_h5 = game_h5_file[game_run]
         for datum in data_types:
             assert game_run_data_h5.__contains__(datum), print(

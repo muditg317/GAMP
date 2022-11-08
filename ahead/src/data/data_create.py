@@ -9,6 +9,7 @@ import numpy as np
 from tqdm import tqdm
 from subprocess import call
 import h5py
+sys.path.append(os.getcwd())
 from src.data.data_loaders import load_action_data, load_gaze_data
 from src.features.feat_utils import transform_images, fuse_gazes_noop, reduce_gaze_stack, fuse_gazes
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -143,7 +144,7 @@ def create_processed_data(stack=1,
 
         images_ = images_.numpy()
         gazes = gazes.numpy()
-        gazes_fused_noop = gazes_fused_noop.numpy()
+        # gazes_fused_noop = gazes_fused_noop.numpy()
 
         group.create_dataset('images',
                              data=images_,

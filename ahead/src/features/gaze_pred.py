@@ -1,5 +1,6 @@
 import os
 import sys
+sys.path.append(os.getcwd())
 import torch
 from tqdm import tqdm
 from yaml import safe_load
@@ -11,7 +12,7 @@ import numpy as np
 from feat_utils import gaze_pdf
 import argparse
 # pylint: disable=all
-from feat_utils import image_transforms, reduce_gaze_stack, draw_figs, fuse_gazes, fuse_gazes_noop  # nopep8
+from feat_utils import image_transforms, reduce_gaze_stack, draw_figs, fuse_gazes, fuse_gazes_noop, draw_figs_  # nopep8
 parser = argparse.ArgumentParser(description='.')
 parser.add_argument('--game',required=True)
 
@@ -55,26 +56,32 @@ if MODE=='eval':
     x, y = curr_group_data.values()
     x = x[0]
     y = y[0]
+    print(x.shape)
+    print(y.shape)
+    imag = np.random.randint(0,5000,16)
+    print(imag)
+    for i in imag:
+        image_ = x[i,:,:,:]
+        print(image_.shape)
+        gaze_ =  y[i,:,:]
 
-    image_ = x[34]
-    gaze_ =  y[34]
+        for cpt in tqdm(range(14, 15, 1)):
+            gaze_net.epoch = cpt
+            gaze_net.load_model_fn(cpt)
+            smax = gaze_net.infer(
+            torch.Tensor(image_).to(device=device).unsqueeze(0)).squeeze().cpu().data.numpy()
 
-    for cpt in tqdm(range(14, 15, 1)):
-        gaze_net.epoch = cpt
-        gaze_net.load_model_fn(cpt)
-        smax = gaze_net.infer(
-           torch.Tensor(image_).to(device=device).unsqueeze(0)).squeeze().cpu().data.numpy()
+            # gaze_max = np.array(gaze_max)/84.0
+            # smax = gaze_pdf([g_max])
+            # gaze_ = gaze_pdf([gaze_max])
+            pile = np.percentile(smax,90)
+            smax = np.clip(smax,pile,1)
+            smax = (smax-np.min(smax))/(np.max(smax)-np.min(smax))
+            smax = smax/np.sum(smax)
 
-        # gaze_max = np.array(gaze_max)/84.0
-        # smax = gaze_pdf([g_max])
-        # gaze_ = gaze_pdf([gaze_max])
-        pile = np.percentile(smax,90)
-        smax = np.clip(smax,pile,1)
-        smax = (smax-np.min(smax))/(np.max(smax)-np.min(smax))
-        smax = smax/np.sum(smax)
-
-        draw_figs(x_var=smax, gazes=gaze_*255)
-        draw_figs(x_var=image_[-1], gazes=gaze_*255)
-
+            # draw_figs(x_var=smax, gazes=gaze_*255)
+            # draw_figs(x_var=image_[-1], gazes=gaze_*255)
+            draw_figs_(x_var=smax, x_var2 = image_[-1], gazes=gaze_*255)
+            # draw_figs(x_var=image_[-1], gazes=gaze_*255)
 else:
     gaze_net.train_loop(optimizer, lr_scheduler, loss_, batch_size=BATCH_SIZE)

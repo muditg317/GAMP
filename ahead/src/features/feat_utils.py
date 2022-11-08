@@ -21,6 +21,25 @@ def draw_figs(x_var, x_title=0, gazes=None):
     plt.waitforbuttonpress()
     plt.close('all')
 
+def draw_figs_(x_var,x_var2, x_title=0, gazes=None):
+    fig = plt.figure()
+    plt.axis('off')
+    plt.tight_layout
+    fig.suptitle(x_title)
+    fig.add_subplot(2, 2, 1)
+    plt.imshow(x_var, cmap='RdPu')
+    fig.add_subplot(2, 2, 2)
+    plt.imshow(gazes, cmap='RdPu')
+    fig.add_subplot(2, 2, 3)
+    plt.imshow(x_var)
+    plt.imshow(x_var2, cmap='Greys_r',alpha = 0.5)
+    fig.add_subplot(2, 2, 4)
+    plt.imshow(gazes)
+    plt.imshow(x_var2, cmap='Greys_r',alpha = 0.5)
+
+    plt.show()
+    # plt.waitforbuttonpress()
+    # plt.close('all')
 
 def gaze_clusters(gaze_data, num_clusters=NUM_CLUSTERS):
     if len(gaze_data) < num_clusters:
