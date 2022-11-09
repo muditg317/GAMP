@@ -341,7 +341,7 @@ class SGAZED_ACTION_SL(nn.Module):
             if self.gate_output == 0:
                 self.gate_output = -1
             # self.writer.add_scalar('actions_gazed',acts.data.item()*self.gate_output)
-            print(acts.data.item(),self.gate_output)
+            # print(acts.data.item(),self.gate_output)
             self.train()
 
         return acts
