@@ -194,12 +194,11 @@ def load_hdf_data(
     game_data = []
     
     if dataset == 'combined':
-        dataset = ['564_RZ_4602455_Jul-31-14-48-16']#list(game_h5_file.keys())
+        dataset = list(game_h5_file.keys())
     game_data = {k: [] for k in data_types}
 
     actions = []
     for game_run in dataset:
-        print(dataset,game_run)
         assert game_h5_file.__contains__(game_run), print(game_run, "doesn't exist in game", game)
         game_run_data_h5 = game_h5_file[game_run]
         for datum in data_types:
@@ -328,10 +327,12 @@ class HDF5TorchChunkDataset(data.Dataset):
         if isinstance(self.dataset,list) and 'combined' not in self.dataset:
             groups = self.dataset
         
-        if dataset != 'combined':
-            groups = self.dataset_exclude
+        # if dataset != 'combined':
+        #     groups = self.dataset_exclude
         
-        self.groups = cycle(groups)        
+        self.groups = cycle(groups)   
+        # print(groups,'groups1212')   
+        # print(dataset_exclude,dataset,'1221')
         self.group_lens = [
             self.hdf5_file[g]['actions'].len() for g in groups
         ]

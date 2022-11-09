@@ -97,3 +97,5 @@ models_/
 runs*/
 runs_old/
 out*
+
+src/ezra_test.py

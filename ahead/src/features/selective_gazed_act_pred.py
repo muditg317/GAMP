@@ -1,6 +1,7 @@
-from src.data.data_loaders import load_hdf_data
 import os
 import sys
+sys.path.append(os.getcwd())
+from src.data.data_loaders import load_hdf_data
 import torch
 from tqdm import tqdm
 from yaml import safe_load
@@ -44,7 +45,7 @@ elif game == 'asterix':
 elif game == 'breakout':
     dataset_val = [ '564_RZ_4602455_Jul-31-14-48-16',
                     '527_RZ_4153166_Jul-26-10-00-12']
-    env_name = 'Breakout-v0'
+    env_name = 'ALE/Breakout-v5'
 
 elif game == 'freeway':
     dataset_val = ['151_JAW_3358283_Dec-15-11-19-24','157_KM_6307437_Jan-18-14-31-43',
@@ -77,8 +78,7 @@ elif game =='ms_pacman':
 elif game == 'centipede':
     env_name = 'Centipede-v0'
 
-dataset_val = ['']
-
+# dataset_val = ['']
 device = torch.device('cuda')
 
 data_types = ['images', 'actions', 'gazes']

@@ -12,7 +12,7 @@ from src.data.data_loaders import HDF5TorchDataset, load_data_iter
 import matplotlib.pyplot as plt
 from src.features.feat_utils import image_transforms
 import gym
-from gym.wrappers import FrameStack, Monitor
+from gym.wrappers import FrameStack#, Monitor
 np.random.seed(42)
 
 
@@ -61,6 +61,7 @@ class SGAZED_ACTION_SL(nn.Module):
         # self.W = torch.nn.Parameter(torch.Tensor([1]),requires_grad=True)
 
         if mode != 'eval':
+            print('training')
             self.train_data_iter = load_data_iter(
                 game=self.game,
                 data_types=self.data_types,
@@ -71,7 +72,8 @@ class SGAZED_ACTION_SL(nn.Module):
                 load_type=dataset_train_load_type,
                 dataset_exclude=dataset_val,
             )
-
+            print('eval'
+            )
             self.val_data_iter = load_data_iter(
                 game=self.game,
                 data_types=self.data_types,
@@ -139,7 +141,7 @@ class SGAZED_ACTION_SL(nn.Module):
         x = self.batch_norm64_2(x)
         # x = self.dropout(x)
 
-        x_cgl = self.softmax_cgl(self.conv4_cgl(x))
+        # x_cgl = self.softmax_cgl(self.conv4_cgl(x))
         # gaze_overlay forward
         # x_g = self.W * x_g
 
@@ -155,7 +157,9 @@ class SGAZED_ACTION_SL(nn.Module):
         gate_output = torch.relu(torch.sign(out))
 
         # self.writer.add_scalar('gate_output',gate_output.data.item())
-        self.gate_output= gate_output.data.item()
+        # print(gate_output.data)
+        # self.gate_output= gate_output.data.item()
+        self.gate_output= gate_output.data.tolist() # changed because this is a list and not a single value
 
         gate_output = torch.stack([
             vote * torch.ones(x_g.shape[1:]).to(device=self.device) for vote in gate_output
@@ -185,7 +189,7 @@ class SGAZED_ACTION_SL(nn.Module):
         x = self.linear1(x)
         x = self.linear2(x)
         x = self.linear3(x)
-        return x, x_cgl
+        return x
 
     def out_shape(self, layer, in_shape):
         h_in, w_in = in_shape
@@ -206,17 +210,22 @@ class SGAZED_ACTION_SL(nn.Module):
         out_shape = self.out_shape(self.conv3, out_shape)
         return out_shape
 
-    def loss_fn(self, loss_, acts, targets, feat, x_g):
+    def loss_fn(self, loss_, acts, targets, x_g):
         ce_loss = loss_(acts, targets).to(device=self.device)
-        cg_loss = self.
+        # cg_loss = self. #CGL
         return ce_loss
 
-    def cgl_kl(self, y_true, y_pred):
-        '''CGL loss function'''
-        epsilon = 2.2204e-16  # introduce epsilon to avoid log and division by zero error
-        y_true2 = torch.clip(y_true,epsilon,1)
-        y_pred = torch.clip(y_pred, epsilon, 1)
-        return torch.sum(y_true * torch.log(y_true2 / y_pred))  # for old Keras need axis = [1,2,3]
+    # def loss_fn(self, loss_, acts, targets, feat, x_g):#CGL
+    #     ce_loss = loss_(acts, targets).to(device=self.device)
+    #     # cg_loss = self. 
+    #     return ce_loss
+
+    # def cgl_kl(self, y_true, y_pred): #CGL
+    #     '''CGL loss function'''
+    #     epsilon = 2.2204e-16  # introduce epsilon to avoid log and division by zero error
+    #     y_true2 = torch.clip(y_true,epsilon,1)
+    #     y_pred = torch.clip(y_pred, epsilon, 1)
+    #     return torch.sum(y_true * torch.log(y_true2 / y_pred))  # for old Keras need axis = [1,2,3]
 
     def resized_heatmap(self, heatmap, size):
         heatmap = heatmap.squeeze()
@@ -255,6 +264,7 @@ class SGAZED_ACTION_SL(nn.Module):
         start_epoch = self.epoch+1
         end_epoch = start_epoch+300
         for epoch in range(start_epoch, end_epoch):
+            print(epoch)
             for i, data in enumerate(self.train_data_iter):
 
                 x, y, x_g = self.get_data(data)
@@ -269,8 +279,10 @@ class SGAZED_ACTION_SL(nn.Module):
 
                 self.opt.zero_grad()
 
-                acts, feat = self.forward(x, x_g)
-                loss = self.loss_fn(loss_, acts, y, feat, x_g)
+                # acts, feat = self.forward(x, x_g) CGL
+                # loss = self.loss_fn(loss_, acts, y, feat, x_g)#CGL
+                acts = self.forward(x, x_g)
+                loss = self.loss_fn(loss_, acts, y, x_g)
                 loss.backward()
                 self.opt.step()
                 self.writer.add_scalar('Loss', loss.data.item(), eix)
@@ -322,13 +334,14 @@ class SGAZED_ACTION_SL(nn.Module):
         with torch.no_grad():
             self.eval()
 
-            acts, _ = self.forward(x_var, xg_var)
-            acts = torch.softmax(acts, dim=1).argmax()
-            self.writer.add_scalars('actions_gate',{'actions':torch.sign(acts).data.item(),'gate_out':self.gate_output})
+            # acts, _ = self.forward(x_var, xg_var) #CGL
+            acts= self.forward(x_var, xg_var)
+            acts = torch.argmax(torch.softmax(acts, dim=1))
+            self.writer.add_scalars('actions_gate',{'actions':torch.sign(acts).data.item(),'gate_out':torch.as_tensor(self.gate_output)})
             if self.gate_output == 0:
                 self.gate_output = -1
-            self.writer.add_scalar('actions_gazed',acts.data.item()*self.gate_output)
-
+            # self.writer.add_scalar('actions_gazed',acts.data.item()*self.gate_output)
+            print(acts.data.item(),self.gate_output)
             self.train()
 
         return acts
@@ -351,7 +364,7 @@ class SGAZED_ACTION_SL(nn.Module):
 
     def batch_acc(self, acts, y):
         with torch.no_grad():
-            acc = (acts.argmax(dim=1) == y).sum().data.item() / y.shape[0]
+            acc = (torch.argmax(acts,dim=1) == y).sum().data.item() / y.shape[0]
         return acc
 
     def calc_val_metrics(self, e):
@@ -375,10 +388,12 @@ class SGAZED_ACTION_SL(nn.Module):
                         g_cgl = x_g
                         # x_g = x_g.unsqueeze(1).expand(x.shape)
 
-                acts, feat = self.forward(x, x_g)
-                loss += self.loss_fn(self.loss_, acts, y, feat).data.item()
+                # acts, feat = self.forward(x, x_g) #CGL
+                acts= self.forward(x, x_g)
+                # loss += self.loss_fn(self.loss_, acts, y, feat).data.item()
+                # loss += self.loss_fn(self.loss_, acts, y).data.item() #CGL
 
-                acc += (acts.argmax(dim=1) == y).sum().data.item()
+                acc += (torch.argmax(acts,dim=1) == y).sum().data.item()
                 ix += y.shape[0]
 
         self.train()
@@ -403,8 +418,8 @@ class SGAZED_ACTION_SL(nn.Module):
                         x = x[:, -1].unsqueeze(1)
 
                         x_g = (x * x_g)
-
-                acts, _ = self.forward(x, x_g).argmax(dim=1)
+                # acts, _ = torch.argmax(self.forward(x, x_g),dim=1) #CGL
+                acts = self.forward(x, x_g).argmax(dim=1)
                 acc += (acts == y).sum().data.item()
                 ix += y.shape[0]
 
@@ -415,24 +430,26 @@ class SGAZED_ACTION_SL(nn.Module):
 
         # env = gym.make('Phoenix-v0', full_action_space=True,frameskip=4)
         print(self.env_name[0])
+
         env = gym.make(self.env_name[0], full_action_space=True, frameskip=1)
         env = FrameStack(env, 4)
-        env = Monitor(env, self.env_name[0], force=True)
+        # env = Monitor(env, self.env_name[0], force=True)
 
         t_rew = 0
 
         for i_episode in range(2):
-            observation = env.reset()
+            observation,info = env.reset()
+            # print(observation)
             ep_rew = 0
             while True:
                 observation = torch.stack(
-                    [transform_images(o).squeeze() for o in observation]).unsqueeze(0).to(device=self.device)
+                    [transform_images(o.__array__()).squeeze() for o in observation]).unsqueeze(0).to(device=self.device)
                 x_g = self.gaze_pred_model.infer(observation)
                 x_g = self.process_gaze(x_g).unsqueeze(1)
                 observation = observation[:, -1].unsqueeze(1)
                 x_g = observation * x_g
                 action = self.infer(observation, x_g).data.item()
-                observation, reward, done, info = env.step(action)
+                observation, reward, done, tr, info = env.step(action) # Might have to modify framestack wrapper to include truncated_done
 
                 ep_rew += reward
                 if done:
