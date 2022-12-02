@@ -27,6 +27,8 @@ BATCH_SIZE = config_data['BATCH_SIZE']
 
 dataset_train = dataset_val = 'combined'  #game_run
 
+dataset_val = ['564_RZ_4602455_Jul-31-14-48-16']
+
 device = torch.device('cuda')
 
 data_types = ['images', 'gazes']
@@ -66,6 +68,7 @@ if MODE=='eval':
         gaze_ =  y[i,:,:]
 
         for cpt in tqdm(range(14, 15, 1)):
+            print(cpt)
             gaze_net.epoch = cpt
             gaze_net.load_model_fn(cpt)
             smax = gaze_net.infer(

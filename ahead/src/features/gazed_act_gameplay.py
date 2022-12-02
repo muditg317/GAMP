@@ -1,5 +1,6 @@
 import os
 import sys
+sys.path.append(os.getcwd())
 import torch
 from tqdm import tqdm
 from yaml import safe_load
@@ -9,12 +10,13 @@ from src.data.data_loaders import load_action_data, load_gaze_data
 from src.models.cnn_gaze import CNN_GAZE
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import gym
-from gym.wrappers import FrameStack,Monitor
+from gym.wrappers import FrameStack, RecordVideo
+
 from src.features.feat_utils import image_transforms
 import numpy as np
 transform_images = image_transforms()
 from src.data.data_loaders import load_hdf_data
-from gym.envs.atari import AtariEnv
+# from gym.envs.atari import AtariEnv
 # pylint: disable=all
 from feat_utils import image_transforms, reduce_gaze_stack, draw_figs, fuse_gazes, fuse_gazes_noop,gaze_pdf  # nopep8
 import argparse
@@ -120,13 +122,13 @@ optimizer = torch.optim.Adadelta(action_net.parameters(), lr=1.0, rho=0.95)
 #     optimizer, lr_lambda=lambda x: x*0.95)
 lr_scheduler = None
 loss_ = torch.nn.CrossEntropyLoss().to(device=device)
-env = gym.make(env_name, full_action_space=True,frameskip=1)
+env = gym.make(env_name, full_action_space=False,frameskip=1, render_mode = 'human')
 
 env = FrameStack(env, 4)
-env = Monitor(env,env_name,force=True)
+# env = RecordVideo(env,env_name)
 
 t_rew = 0
-print(env._env_info())
+# print(env._env_info())
 if episode is None:
     start_episode = 0
     end_episode = 30
@@ -135,8 +137,8 @@ else:
     end_episode = start_episode+1
 for i_episode in range(start_episode,end_episode,1):
     env.seed(i_episode)
-    
-    observation = env.reset()
+    # env.render(mode = 'human')
+    observation,info = env.reset()
     ep_rew = 0
     i =-1
     while True:
@@ -145,7 +147,7 @@ for i_episode in range(start_episode,end_episode,1):
 
         obs = observation
         observation = torch.stack(
-            [transform_images(o).squeeze() for o in observation]).unsqueeze(0).to(device=device)
+            [transform_images(o.__array__()).squeeze() for o in observation]).unsqueeze(0).to(device=device)
         xg = gaze_net.infer(observation)
         gaze = torch.exp(xg)
         gaze_true = gaze.squeeze().cpu().data.numpy()
@@ -170,7 +172,7 @@ for i_episode in range(start_episode,end_episode,1):
 
 
         # cv2.imshow("gaze_pred_normalized",gaze_)
-        # cv2.waitKey(0)
+        # cv2.waitKey(5)
 
         gaze_ = gaze[0][0].cpu().numpy()
         
@@ -191,10 +193,10 @@ for i_episode in range(start_episode,end_episode,1):
         action = action_net.infer(observation,gaze).data.item()
         
         
-        observation, reward, done, info = env.step(action)
+        observation, reward, done, trun, info = env.step(action)
 
         ep_rew += reward
-        if done:
+        if done or trun:
             # print("Episode finished after {} timesteps".format(t + 1))
             break
     t_rew += ep_rew

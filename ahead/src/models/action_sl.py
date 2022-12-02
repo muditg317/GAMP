@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from src.features.feat_utils import image_transforms
 np.random.seed(42)
 import gym
-from gym.wrappers import FrameStack,Monitor
+from gym.wrappers import FrameStack, RecordVideo
 
 class ACTION_SL(nn.Module):
     def __init__(self,

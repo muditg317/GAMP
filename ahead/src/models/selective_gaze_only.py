@@ -23,7 +23,7 @@ class SGAZED_ACTION_SL(nn.Module):
                  epoch=0,
                  num_actions=18,
                  game='breakout',
-                 data_types=['images', 'actions', 'gazes_fused_noop'],
+                 data_types=['images', 'actions', 'gazes'],
                  dataset_train='combined',
                  dataset_train_load_type='disk',
                  dataset_val='combined',
@@ -335,6 +335,7 @@ class SGAZED_ACTION_SL(nn.Module):
             self.eval()
 
             # acts, _ = self.forward(x_var, xg_var) #CGL
+            # print(x_var.shape,xg_var.shape)
             acts= self.forward(x_var, xg_var)
             acts = torch.argmax(torch.softmax(acts, dim=1))
             self.writer.add_scalars('actions_gate',{'actions':torch.sign(acts).data.item(),'gate_out':torch.as_tensor(self.gate_output)})
@@ -452,7 +453,7 @@ class SGAZED_ACTION_SL(nn.Module):
                 observation, reward, done, tr, info = env.step(action) # Might have to modify framestack wrapper to include truncated_done
 
                 ep_rew += reward
-                if done:
+                if done or tr:
                     # print("Episode finished after {} timesteps".format(t + 1))
                     break
             t_rew += ep_rew

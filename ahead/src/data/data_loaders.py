@@ -192,18 +192,21 @@ def load_hdf_data(
     game_file = os.path.join(PROC_DATA_DIR, game + '.hdf5')
     game_h5_file = h5py.File(game_file, 'r')
     game_data = []
-    
+    # print(dataset, game_h5_file.keys())
     if dataset == 'combined':
         dataset = list(game_h5_file.keys())
     game_data = {k: [] for k in data_types}
-
+    # print(dataset)
     actions = []
     for game_run in dataset:
-        assert game_h5_file.__contains__(game_run), print(game_run, "doesn't exist in game", game)
+        assert game_h5_file.__contains__(game_run), f"{game_run} doesn't exist in game {game}"
+        # print(f"{game_run} found in game {game} file")
         game_run_data_h5 = game_h5_file[game_run]
+        # print(game_run_data_h5.keys())
         for datum in data_types:
-            assert game_run_data_h5.__contains__(datum), print(
-                datum, "doesn't exist in game", game, game_run)
+            # print(data_types)
+            assert game_run_data_h5.__contains__(datum), f"{datum} doesn't exist in game {game} {game_run}"
+            # print(f"{datum} found in game {game} {game_run}")
             game_data[datum].append(game_run_data_h5[datum][:])
     return game_data
 
@@ -247,7 +250,7 @@ def load_data_iter(
     """
 
     if load_type == 'memory':
-        data = load_hdf_data(game=game, dataset=dataset)
+        data = load_hdf_data(game=game, dataset=dataset, data_types=data_types)
         x, y_, _, x_g = data.values()
         x = torch.Tensor(x).squeeze().to(device=device)
         y = torch.LongTensor(y_).squeeze()[:, -1].to(device=device)

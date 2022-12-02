@@ -45,7 +45,7 @@ elif game == 'asterix':
 elif game == 'breakout':
     dataset_val = [ '564_RZ_4602455_Jul-31-14-48-16',
                     '527_RZ_4153166_Jul-26-10-00-12']
-    env_name = 'ALE/Breakout-v5'
+    env_name = 'Breakout-v0'
 
 elif game == 'freeway':
     dataset_val = ['151_JAW_3358283_Dec-15-11-19-24','157_KM_6307437_Jan-18-14-31-43',
