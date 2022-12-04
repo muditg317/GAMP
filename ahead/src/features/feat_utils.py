@@ -210,6 +210,30 @@ def fuse_gazes_noop(images_,
 
     return fused.to(device='cpu')
 
+def motion_pdf(image1, image2):
+    diff = image1 - image2
+    avg_diff = np.average(diff, axis=3)
+    pdf = avg_diff / np.sum(avg_diff)
+    return 1 - pdf
+
+def reduce_image_stack_to_motion(image_stack):
+    motion_pdfs = [motion_pdf(im1, im2) for im1,im2 in zip(motion_stack[:-1], motion_stack[1:])]
+    pdf = np.sum(motion_pdfs, axis=0)
+    wpdf = pdf / np.sum(pdf)
+    # print(torch.Tensor(wpdf).shape)
+    # plt.imshow(wpdf)
+    # plt.pause(12)
+    # exit()
+    assert abs(np.sum(wpdf) - 1) <= 1e-2, print(np.sum(wpdf))
+
+    return torch.Tensor(wpdf)
+
+
+def compute_motion(images_):
+    return torch.stack([
+        reduce_image_stack_to_motion(image_stack) for image_stack in images_
+    ])
+
 
 def normalize(img, val):
     return (img - img.min()) / (img.max() - img.min()) * val
