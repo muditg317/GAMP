@@ -94,16 +94,16 @@ def create_processed_data(stack=1,
     game_runs = os.listdir(game_dir)
     images = []
     actions = []
-    gaze_out_h5_file = os.path.join(PROC_DATA_DIR, game + '.hdf5')
-    gaze_h5_file = h5py.File(gaze_out_h5_file, 'a')
+    game_h5_filename = os.path.join(PROC_DATA_DIR, game + '.hdf5')
+    game_h5_file = h5py.File(game_h5_filename, 'a')
 
     for game_run in tqdm(game_runs):
-        if game_run not in gaze_h5_file.keys():
+        if game_run not in game_h5_file.keys():
             print(f"Creating processed data for {game} - {game_run}")
-            group = gaze_h5_file.create_group(game_run)
+            group = game_h5_file.create_group(game_run)
         else:
             print(f"Some processed data for {game} - {game_run} already exists")
-            group = gaze_h5_file[game_run]
+            group = game_h5_file[game_run]
 
         do_images = 'images' in data_types and 'images' not in group.keys()
         do_actions = 'actions' in data_types and 'actions' not in group.keys()
@@ -196,7 +196,7 @@ def create_processed_data(stack=1,
     if do_images or do_actions or do_gazes_fused_noop or do_motion:
         del images_, actions_
 
-    gaze_h5_file.close()
+    game_h5_file.close()
 
 
 def combine_processed_data(game):
@@ -213,38 +213,38 @@ def combine_processed_data(game):
             None
     """
 
-    gaze_out_h5_file = os.path.join(PROC_DATA_DIR, game + '.hdf5')
-    gaze_h5_file = h5py.File(gaze_out_h5_file, 'a')
+    game_h5_filename = os.path.join(PROC_DATA_DIR, game + '.hdf5')
+    game_h5_file = h5py.File(game_h5_filename, 'a')
 
-    groups = list(gaze_h5_file.keys())
+    groups = list(game_h5_file.keys())
     if not 'combined' in groups:
-        all_group = gaze_h5_file.create_group('combined')
-    all_group = gaze_h5_file['combined']
-    data = list(gaze_h5_file[groups[0]].keys())
+        all_group = game_h5_file.create_group('combined')
+    all_group = game_h5_file['combined']
+    data = list(game_h5_file[groups[0]].keys())
 
     for datum in tqdm(data):
         max_shape_datum = (sum([
-            gaze_h5_file[group][datum].shape[0] for group in groups
+            game_h5_file[group][datum].shape[0] for group in groups
             if group != 'combined'
-        ]), *gaze_h5_file[groups[0]][datum].shape[1:])
+        ]), *game_h5_file[groups[0]][datum].shape[1:])
         print(max_shape_datum, datum)
         all_group.create_dataset(
             datum,
-            data=gaze_h5_file[groups[0]][datum][:],
+            data=game_h5_file[groups[0]][datum][:],
             maxshape=max_shape_datum,
             compression=config_data['HDF_CMP_TYPE'],
         )
 
         for group in tqdm(groups[1:]):
-            gaze_h5_file['combined'][datum].resize(
-                gaze_h5_file['combined'][datum].shape[0] +
-                gaze_h5_file[group][datum].shape[0],
+            game_h5_file['combined'][datum].resize(
+                game_h5_file['combined'][datum].shape[0] +
+                game_h5_file[group][datum].shape[0],
                 axis=0)
-            gaze_h5_file['combined'][datum][
-                gaze_h5_file['combined'][datum].
-                shape[0]:, :] = gaze_h5_file[group][datum]
+            game_h5_file['combined'][datum][
+                game_h5_file['combined'][datum].
+                shape[0]:, :] = game_h5_file[group][datum]
 
-    gaze_h5_file.close()
+    game_h5_file.close()
 
 
 if __name__ == "__main__":

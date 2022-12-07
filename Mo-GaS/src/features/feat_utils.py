@@ -210,43 +210,43 @@ def fuse_gazes_noop(images_,
 
     return fused.to(device='cpu')
 
-def make_heatmap(pdf, tol=1e-2):
-    total = np.sum(pdf)
+def make_heatmap(pdf, tol=1e-2): # takes tensor
+    total = torch.sum(pdf).cuda()
     if total <= tol:
-        return np.zeros_like(pdf)
+        return torch.zeros_like(pdf).cuda()
 
-    wpdf = pdf / np.sum(pdf)
-    assert abs(np.sum(wpdf) - 1) <= tol, f"Invalid heatmap sum: {np.sum(wpdf)}"
+    wpdf = (pdf / total).cuda()
+    assert abs(torch.sum(wpdf) - 1) <= tol, f"Invalid heatmap sum: {torch.sum(wpdf)}"
 
     return wpdf
 
-def motion_pdf(image1, image2):
-    in_dim = image1.shape[:2] # w,h
-    out_dim = [84, 84]
-    dim_scale = np.divide(out_dim, in_dim).astype(np.float32)
+MOTION_PDF_out_dim = (84,84)
+# MOTION_PDF_x, MOTION_PDF_y = torch.meshgrid(torch.arange(0, MOTION_PDF_out_dim[1], 1), torch.arange(0, MOTION_PDF_out_dim[0], 1))
+MOTION_PDF_x, MOTION_PDF_y = np.mgrid[0:MOTION_PDF_out_dim[1]:1, 0:MOTION_PDF_out_dim[0]:1]
+MOTION_PDF_pos = np.dstack((MOTION_PDF_x, MOTION_PDF_y))
 
-    # motion_map = wpdf = np.zeros(out_dim)
+def motion_pdf(image1, image2): # takes tensors
+    in_dim = torch.tensor(image1.shape[:2]).cuda() # w,h
+    dim_scale = torch.divide(torch.tensor(MOTION_PDF_out_dim).cuda(), in_dim).float().cuda()
 
-    motion_pts = np.argwhere(image1 != image2)[:,:2]
-    motion_pts = np.multiply(motion_pts, dim_scale).astype(np.int32)
-    motion_pts = np.clip(motion_pts, 0, out_dim[0]-1).astype(np.int32)
+    motion_pts = torch.argwhere(image1 != image2)[:,:2].cuda()
+    motion_pts = torch.multiply(motion_pts, dim_scale).int().cuda()
+    motion_pts = torch.clip(motion_pts, 0, MOTION_PDF_out_dim[0]-1).int().cpu().numpy()
 
-    x, y = np.mgrid[0:out_dim[1]:1, 0:out_dim[0]:1]
-    pos = np.dstack((x, y))
-
-    pdfs_true = [np.zeros(out_dim)]
+    pdfs_true = [np.zeros(MOTION_PDF_out_dim)]
     for motion_pt in motion_pts:
         rv = multivariate_normal(mean=motion_pt,
                                 cov=[[2.85 * 2.85, 0], [0, 2.92 * 2.92]])
-        pdfs_true.append(rv.pdf(pos))
+        pdfs_true.append(rv.pdf(MOTION_PDF_pos))
     pdf = np.sum(pdfs_true, axis=0)
 
-    motion_map = make_heatmap(pdf)
+    motion_map = make_heatmap(torch.tensor(pdf).cuda())
     return motion_map
 
 def reduce_image_stack_to_motion(image_stack):
-    motion_pdfs = [motion_pdf(im1, im2) for im1,im2 in zip(image_stack[:-1], image_stack[1:])]
-    pdf = np.max(motion_pdfs, axis=0)
+    image_stack = [torch.from_numpy(image).cuda() for image in image_stack]
+    motion_pdfs = torch.stack([motion_pdf(im1, im2) for im1,im2 in zip(image_stack[:-1], image_stack[1:])])
+    pdf = torch.max(motion_pdfs, axis=0).values
     wpdf = make_heatmap(pdf)
 
     return torch.Tensor(wpdf)
