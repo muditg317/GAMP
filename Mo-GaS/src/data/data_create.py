@@ -1,7 +1,6 @@
 import sys
 import pandas as pd
 import os
-from yaml import safe_load
 import csv
 from collections import OrderedDict
 import cv2
@@ -9,28 +8,19 @@ import numpy as np
 from tqdm import tqdm
 from subprocess import call
 import h5py
-sys.path.append(os.getcwd())
+# sys.path.append(os.getcwd())
+from src.utils.config import *
 from src.data.data_loaders import load_action_data, load_gaze_data
-from src.features.feat_utils import transform_images, fuse_gazes_noop, reduce_gaze_stack, fuse_gazes, compute_motion
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# from src.features.feat_utils import transform_images, fuse_gazes_noop, reduce_gaze_stack, fuse_gazes, compute_motion
+# sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import torch
+from src.utils.config import *
 
 # pylint: disable=all
 from data_utils import get_game_entries_, process_gaze_data  # nopep8
 
 with open('src/config.yaml', 'r') as f:
     config = safe_load(f.read())
-
-RAW_DATA_DIR = config['RAW_DATA_DIR']
-PROC_DATA_DIR = config['PROC_DATA_DIR']
-INTERIM_DATA_DIR = config['INTERIM_DATA_DIR']
-VALID_ACTIONS = config['VALID_ACTIONS']
-STACK_SIZE = config['STACK_SIZE']
-CMP_FMT = config['CMP_FMT']
-OVERWRITE_INTERIM_GAZE = config['OVERWRITE_INTERIM_GAZE']
-
-with open(os.path.join(RAW_DATA_DIR, 'action_enums.txt'), 'r') as f:
-    ACTIONS_ENUM = f.read()
 
 games = VALID_ACTIONS.keys()
 
@@ -169,6 +159,129 @@ def create_processed_data(stack=1,
     gaze_h5_file.close()
 
 
+def create_processed_data_smart(stack=1,
+                          stack_type='',
+                          stacking_skip=1,
+                          from_ix=0,
+                          till_ix=-1,
+                          game='breakout',
+                          data_types=['images', 'actions', 'gazes', 'motion']):
+    """Loads data from all the game runs in the src/data/interim  directory, and creates a hdf file in the src/data/processed directory.
+
+    
+    Args:
+    ----
+    data_types -- types of data to save, contains atleast on of the following
+                ['images', 'actions', 'gazes', 'fused_gazes', 'gazes_fused_noop']
+
+    stack -- number of frames in the stack
+
+    stacking_skip -- Number of frames to skip while stacking
+    
+    from_ix --  starting index in the data, default is first, 0
+    
+    till_ix -- last index of the the data to be considered, default is last ,-1
+
+    game : game to load the data from, directory of game runs
+ 
+    Returns:
+    ----
+    None
+    """
+
+    game_dir = os.path.join(INTERIM_DATA_DIR, game)
+    game_runs = os.listdir(game_dir)
+    images = []
+    actions = []
+    gaze_out_h5_file = os.path.join(PROC_DATA_DIR, game + '.hdf5')
+    gaze_h5_file = h5py.File(gaze_out_h5_file, 'a')
+
+    for game_run in tqdm(game_runs):
+        if game_run not in gaze_h5_file.keys():
+            print("Creating processed data for ", game, game_run)
+            group = gaze_h5_file.create_group(game_run)
+        else:
+            print("Processed data for ", game, game_run, " already exists")
+            group = gaze_h5_file[game_run]
+
+        do_images = 'images' in data_types and 'images' not in group.keys()
+        do_actions = 'actions' in data_types and 'actions' not in group.keys()
+        do_gazes = 'gazes' in data_types and 'gazes' not in group.keys()
+        do_gazes_fused_noop = 'gazes_fused_noop' in data_types and 'gazes_fused_noop' not in group.keys()
+        do_motion = 'motion' in data_types and 'motion' not in group.keys()
+
+        images_, actions_ = load_action_data(stack, stack_type, stacking_skip,
+                                            from_ix, till_ix, game, game_run)
+
+        if do_images:
+            images_data = transform_images(images_, type='torch')
+            images_data = images_data.numpy()
+
+            group.create_dataset('images',
+                                data=images_data,
+                                compression=config['HDF_CMP_TYPE'],
+                                compression_opts=config['HDF_CMP_LEVEL'])
+        if do_actions:
+            group.create_dataset('actions',
+                                data=actions_,
+                                compression=config['HDF_CMP_TYPE'],
+                                compression_opts=config['HDF_CMP_LEVEL'])
+
+        if do_gazes or do_gazes_fused_noop:
+            _, gazes = load_gaze_data(stack,
+                                    stack_type,
+                                    stacking_skip,
+                                    from_ix,
+                                    till_ix,
+                                    game,
+                                    game_run,
+                                    skip_images=True)
+
+            if do_gazes_fused_noop:
+                gazes_fused_noop = fuse_gazes_noop(images_,
+                                                gazes,
+                                                actions_,
+                                                gaze_count=1,
+                                                fuse_type='stack',
+                                                fuse_val=0)
+
+                gazes_fused_noop = gazes_fused_noop.numpy()
+
+                group.create_dataset('gazes_fused_noop',
+                                    data=gazes_fused_noop,
+                                    compression=config['HDF_CMP_TYPE'],
+                                    compression_opts=config['HDF_CMP_LEVEL'])
+
+                del gazes_fused_noop
+
+            if do_gazes:
+                gazes = torch.stack(
+                    [reduce_gaze_stack(gaze_stack) for gaze_stack in gazes])
+
+                gazes = gazes.numpy()
+                group.create_dataset('gazes',
+                                    data=gazes,
+                                    compression=config['HDF_CMP_TYPE'],
+                                    compression_opts=config['HDF_CMP_LEVEL'])
+
+            del gazes
+
+        if do_motion:
+            motion = compute_motion(images_)
+
+            motion = motion.numpy()
+            group.create_dataset('motion',
+                                data=motion,
+                                compression=config['HDF_CMP_TYPE'],
+                                compression_opts=config['HDF_CMP_LEVEL'])
+
+            del motion
+    
+    del images_, actions_
+
+    gaze_h5_file.close()
+
+
 def combine_processed_data(game):
     """Reads the specified hdf5 file, and combines all the groups into a single combined group in the same file.
 
@@ -221,12 +334,13 @@ if __name__ == "__main__":
     import time
     for game in games:
         create_interim_files(game=game)
-        create_processed_data(stack=STACK_SIZE,
+        create_processed_data_smart(stack=STACK_SIZE,
                               game=game,
                               till_ix=-1,
                               stacking_skip=1,
                               data_types=[
                                   'images', 'actions', 'gazes', 'fused_gazes',
-                                  'gazes_fused_noop'
+                                #   'gazes_fused_noop'
+                                #   'motion'
                               ])
         # combine_processed_data(game, data_type='gazed_images')
