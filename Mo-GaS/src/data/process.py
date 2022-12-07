@@ -65,7 +65,8 @@ def create_processed_data(stack=1,
                           from_ix=0,
                           till_ix=-1,
                           game='breakout',
-                          data_types=['images', 'actions', 'gazes', 'motion']):
+                          data_types=['images', 'actions', 'gazes', 'motion'],
+                          recompute=[]):
     """ Loads data from all the game runs in the src/data/interim  directory, and 
         creates a hdf file in the src/data/processed directory.
         The hdf file contains a dataset per run per data type.
@@ -105,11 +106,12 @@ def create_processed_data(stack=1,
             print(f"Some processed data for {game} - {game_run} already exists")
             group = game_h5_file[game_run]
 
-        do_images = 'images' in data_types and 'images' not in group.keys()
-        do_actions = 'actions' in data_types and 'actions' not in group.keys()
-        do_gazes = 'gazes' in data_types and 'gazes' not in group.keys()
-        do_gazes_fused_noop = 'gazes_fused_noop' in data_types and 'gazes_fused_noop' not in group.keys()
-        do_motion = 'motion' in data_types and 'motion' not in group.keys()
+        do_images = 'images' in data_types and ('images' not in group.keys() or 'images' in recompute)
+        do_actions = 'actions' in data_types and ('actions' not in group.keys() or 'actions' in recompute)
+        do_gazes = 'gazes' in data_types and ('gazes' not in group.keys() or 'gazes' in recompute)
+        do_fused_gazes = 'fused_gazes' in data_types and ('fused_gazes' not in group.keys() or 'fused_gazes' in recompute)
+        do_gazes_fused_noop = 'gazes_fused_noop' in data_types and ('gazes_fused_noop' not in group.keys() or 'gazes_fused_noop' in recompute)
+        do_motion = 'motion' in data_types and ('motion' not in group.keys() or 'motion' in recompute)
 
         if do_images or do_actions or do_gazes_fused_noop or do_motion:
             print(f"\tLoading images and actions")
@@ -121,7 +123,9 @@ def create_processed_data(stack=1,
             print(f"\t\tSaving images dataset")
             images_data = transform_images(images_, type='torch')
             images_data = images_data.numpy()
-
+            
+            if 'images' in group.keys():
+                del group['images']
             group.create_dataset('images',
                                 data=images_data,
                                 compression=config_data['HDF_CMP_TYPE'],
@@ -131,6 +135,8 @@ def create_processed_data(stack=1,
         if do_actions:
             print(f"\t\tSaving actions dataset")
 
+            if 'actions' in group.keys():
+                del group['actions']
             group.create_dataset('actions',
                                 data=actions_,
                                 compression=config_data['HDF_CMP_TYPE'],
@@ -158,6 +164,8 @@ def create_processed_data(stack=1,
 
                 gazes_fused_noop = gazes_fused_noop.numpy()
 
+                if 'gazes_fused_noop' in group.keys():
+                    del group['gazes_fused_noop']
                 group.create_dataset('gazes_fused_noop',
                                     data=gazes_fused_noop,
                                     compression=config_data['HDF_CMP_TYPE'],
@@ -170,8 +178,10 @@ def create_processed_data(stack=1,
 
                 gazes = torch.stack(
                     [reduce_gaze_stack(gaze_stack) for gaze_stack in gazes])
-
                 gazes = gazes.numpy()
+
+                if 'gazes' in group.keys():
+                    del group['gazes']
                 group.create_dataset('gazes',
                                     data=gazes,
                                     compression=config_data['HDF_CMP_TYPE'],
@@ -186,6 +196,9 @@ def create_processed_data(stack=1,
 
             print(f"\t\tSaving motion dataset")
             motion = motion.numpy()
+
+            if 'motion' in group.keys():
+                del group['motion']
             group.create_dataset('motion',
                                 data=motion,
                                 compression=config_data['HDF_CMP_TYPE'],
@@ -261,5 +274,6 @@ if __name__ == "__main__":
                                   'fused_gazes',
                                 #   'gazes_fused_noop',
                                   'motion'
-                              ])
+                              ],
+                              recompute=['motion'])
         combine_processed_data(game, data_type='gazed_images')
