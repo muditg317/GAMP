@@ -19,7 +19,7 @@ function force_source {
   fi
   # echo "checked: $sourced"
   if [ "$sourced" != "1" ]; then
-    echo You must use source for \`$(basename $1)\`
+    echo -e "You must use source for "\`$(basename $1)\`"\n\t. $(basename $1)"
     exit # not return because "you can only return from a funtion or sourced script"
   fi
 }

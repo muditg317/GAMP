@@ -20,7 +20,7 @@ The `configure_enviroment.sh` script will handle the installation of the depende
 
 ### Setup Instructions
 1. Clone the repository
-2. Run `./configure_environment.sh` to create a conda environment with the required dependencies
+2. Run `. configure_environment.sh` to create a conda environment with the required dependencies
 3. Download data, preprocess the data, train the gaze model, train the action selection network
 
 > **_NOTE:_** Make sure all commands are run from the root of the repository (this folder, `Mo-GaS/`)
