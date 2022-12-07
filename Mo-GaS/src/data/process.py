@@ -65,8 +65,9 @@ def create_processed_data(stack=1,
                           from_ix=0,
                           till_ix=-1,
                           game='breakout',
-                          data_types=['images', 'actions', 'gazes', 'motion'],
-                          recompute=[]):
+                          data_types=['images', 'actions', 'gazes'],
+                          recompute=[],
+                          bad_keys=['motion']):
     """ Loads data from all the game runs in the src/data/interim  directory, and 
         creates a hdf file in the src/data/processed directory.
         The hdf file contains a dataset per run per data type.
@@ -100,10 +101,10 @@ def create_processed_data(stack=1,
 
     for game_run in tqdm(game_runs):
         if game_run not in game_h5_file.keys():
-            print(f"Creating processed data for {game} - {game_run}")
+            print(f"Creating processed data for [{game} - {game_run}]")
             group = game_h5_file.create_group(game_run)
         else:
-            print(f"Some processed data for {game} - {game_run} already exists")
+            print(f"Some processed data for [{game} - {game_run}] already exists")
             group = game_h5_file[game_run]
 
         do_images = 'images' in data_types and ('images' not in group.keys() or 'images' in recompute)
@@ -111,9 +112,9 @@ def create_processed_data(stack=1,
         do_gazes = 'gazes' in data_types and ('gazes' not in group.keys() or 'gazes' in recompute)
         do_fused_gazes = 'fused_gazes' in data_types and ('fused_gazes' not in group.keys() or 'fused_gazes' in recompute)
         do_gazes_fused_noop = 'gazes_fused_noop' in data_types and ('gazes_fused_noop' not in group.keys() or 'gazes_fused_noop' in recompute)
-        do_motion = 'motion' in data_types and ('motion' not in group.keys() or 'motion' in recompute)
+        # do_motion = 'motion' in data_types and ('motion' not in group.keys() or 'motion' in recompute)
 
-        if do_images or do_actions or do_gazes_fused_noop or do_motion:
+        if do_images or do_actions or do_gazes_fused_noop:
             print(f"\tLoading images and actions")
             images_, actions_ = load_action_data(stack, stack_type, stacking_skip,
                                                 from_ix, till_ix, game, game_run)
@@ -122,7 +123,7 @@ def create_processed_data(stack=1,
         if do_images:
             print(f"\t\tSaving images dataset")
             images_data = transform_images(images_, type='torch')
-            images_data = images_data.numpy()
+            images_data = images_data.cpu().numpy()
             
             if 'images' in group.keys():
                 del group['images']
@@ -189,25 +190,30 @@ def create_processed_data(stack=1,
 
             del gazes
 
-        if do_motion:
-            print(f"\tComputing motion")
+        # if do_motion:
+        #     print(f"\tComputing motion")
 
-            motion = compute_motion(images_)
+        #     motion = compute_motion(images_)
 
-            print(f"\t\tSaving motion dataset")
-            motion = motion.numpy()
+        #     print(f"\t\tSaving motion dataset")
+        #     motion = motion.cpu().numpy()
 
-            if 'motion' in group.keys():
-                del group['motion']
-            group.create_dataset('motion',
-                                data=motion,
-                                compression=config_data['HDF_CMP_TYPE'],
-                                compression_opts=config_data['HDF_CMP_LEVEL'])
+        #     if 'motion' in group.keys():
+        #         del group['motion']
+        #     group.create_dataset('motion',
+        #                         data=motion,
+        #                         compression=config_data['HDF_CMP_TYPE'],
+        #                         compression_opts=config_data['HDF_CMP_LEVEL'])
 
-            del motion
-    
-    if do_images or do_actions or do_gazes_fused_noop or do_motion:
-        del images_, actions_
+        #     del motion
+        
+        for key in bad_keys:
+            if key in group.keys():
+                print(f"\t\tDeleting bad key: {key}")
+                del group[key]
+
+        if do_images or do_actions or do_gazes_fused_noop:
+            del images_, actions_
 
     game_h5_file.close()
 
@@ -273,7 +279,7 @@ if __name__ == "__main__":
                                   'gazes',
                                   'fused_gazes',
                                 #   'gazes_fused_noop',
-                                  'motion'
-                              ],
-                              recompute=['motion'])
+                                #   'motion'
+                              ])#,
+                            #   recompute=['motion'])
         combine_processed_data(game, data_type='gazed_images')
