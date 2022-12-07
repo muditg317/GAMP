@@ -158,7 +158,44 @@ echo -e "\nInstalling local directory as module via pip"
 echo -e "\t++  pip install -e ."
 pip install -e .
 
+echo -e "\nInstalling jupyter notebook"
+echo -e "\nInstalling jupyter tools / extensions"
+use_jupyter=0
+while true; do
+    read -p "Do you plan to use jupyter notebooks ([y]/n)? " yn
+    case $yn in
+        "" | [Yy]* ) use_jupyter=1; break;;
+        [Nn]* ) break;;
+        * ) echo "Please answer yes or no.";;
+    esac
+done
+
+if [ $use_jupyter -eq 1 ]; then
+  use_vscode_jupyter=0
+  while true; do
+      read -p "Do you plan to use the ipynb support within VSCode ([y]/n)? " yn
+      case $yn in
+          "" | [Yy]* ) use_vscode_jupyter=1; break;;
+          [Nn]* ) break;;
+          * ) echo "Please answer yes or no.";;
+      esac
+  done
+
+  if [ $use_vscode_jupyter -eq 0 ]; then
+    echo -e "\nInstalling jupyter into conda environment"
+    echo -e "\t++  conda install -c anaconda jupyter"
+    conda install -c anaconda jupyter
+  fi
+
+  echo -e "\nInstalling jupyter extensions"
+  echo -e "\t++  conda install -n $env_name ipykernel --update-deps --force-reinstall"
+  conda install -n $env_name ipykernel --update-deps --force-reinstall
+  echo -e "\t++  conda install -c conda-forge ipympl"
+  conda install -c conda-forge ipympl
+fi
+
 echo -e "\n\nDone setting up Mo-GaS environment!\n"
+
 
 echo -e "To get started, follow the instructions in the README.md file\n"
 
