@@ -99,10 +99,10 @@ def create_processed_data(stack=1,
 
     for game_run in tqdm(game_runs):
         if game_run not in gaze_h5_file.keys():
-            print("Creating processed data for ", game, game_run)
+            print(f"Creating processed data for {game} - {game_run}")
             group = gaze_h5_file.create_group(game_run)
         else:
-            print("Processed data for ", game, game_run, " already exists")
+            print(f"Some processed data for {game} - {game_run} already exists")
             group = gaze_h5_file[game_run]
 
         do_images = 'images' in data_types and 'images' not in group.keys()
@@ -111,10 +111,12 @@ def create_processed_data(stack=1,
         do_gazes_fused_noop = 'gazes_fused_noop' in data_types and 'gazes_fused_noop' not in group.keys()
         do_motion = 'motion' in data_types and 'motion' not in group.keys()
 
+        print(f"\tLoading images and actions")
         images_, actions_ = load_action_data(stack, stack_type, stacking_skip,
                                             from_ix, till_ix, game, game_run)
 
         if do_images:
+            print(f"\t\tSaving images dataset")
             images_data = transform_images(images_, type='torch')
             images_data = images_data.numpy()
 
@@ -122,13 +124,18 @@ def create_processed_data(stack=1,
                                 data=images_data,
                                 compression=config_data['HDF_CMP_TYPE'],
                                 compression_opts=config_data['HDF_CMP_LEVEL'])
+            
+            del images_data
         if do_actions:
+            print(f"\t\tSaving actions dataset")
+
             group.create_dataset('actions',
                                 data=actions_,
                                 compression=config_data['HDF_CMP_TYPE'],
                                 compression_opts=config_data['HDF_CMP_LEVEL'])
 
         if do_gazes or do_gazes_fused_noop:
+            print(f"\tLoading gazes")
             _, gazes = load_gaze_data(stack,
                                     stack_type,
                                     stacking_skip,
@@ -139,6 +146,7 @@ def create_processed_data(stack=1,
                                     skip_images=True)
 
             if do_gazes_fused_noop:
+                print(f"\t\tSaving fused (noop) gazes dataset")
                 gazes_fused_noop = fuse_gazes_noop(images_,
                                                 gazes,
                                                 actions_,
@@ -156,6 +164,8 @@ def create_processed_data(stack=1,
                 del gazes_fused_noop
 
             if do_gazes:
+                print(f"\t\tSaving gazes dataset")
+
                 gazes = torch.stack(
                     [reduce_gaze_stack(gaze_stack) for gaze_stack in gazes])
 
@@ -168,8 +178,11 @@ def create_processed_data(stack=1,
             del gazes
 
         if do_motion:
+            print(f"\tComputing motion")
+
             motion = compute_motion(images_)
 
+            print(f"\t\tSaving motion dataset")
             motion = motion.numpy()
             group.create_dataset('motion',
                                 data=motion,
@@ -241,6 +254,6 @@ if __name__ == "__main__":
                               data_types=[
                                   'images', 'actions', 'gazes', 'fused_gazes',
                                 #   'gazes_fused_noop'
-                                  'motion'
+                                #   'motion'
                               ])
         combine_processed_data(game, data_type='gazed_images')

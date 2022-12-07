@@ -257,7 +257,7 @@ def load_data_iter(
                                              till_ix=-1,
                                              game_run=dataset)
 
-        _, gazes = load_gaze_data(stack=config['STACK_SIZE'],
+        _, gazes = load_gaze_data(stack=STACK_SIZE,
                                   game=game,
                                   till_ix=-1,
                                   game_run=dataset,
