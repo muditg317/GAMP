@@ -211,19 +211,37 @@ def fuse_gazes_noop(images_,
     return fused.to(device='cpu')
 
 def motion_pdf(image1, image2):
-    diff = image1 - image2
-    avg_diff = np.average(diff, axis=2)
-    pdf = avg_diff / np.sum(avg_diff)
-    return 1 - pdf
+    in_dim = image1.shape[:2] # w,h
+    out_dim = [84, 84]
+    dim_scale = np.divide(out_dim, in_dim).astype(np.float32)
+
+    # motion_map = wpdf = np.zeros(out_dim)
+
+    motion_pts = np.argwhere(image1 != image2)[:,:2]
+    motion_pts = np.multiply(motion_pts, dim_scale).astype(np.int32)
+    motion_pts = np.clip(motion_pts, 0, out_dim[0]-1).astype(np.int32)
+
+    x, y = np.mgrid[0:out_dim[1]:1, 0:out_dim[0]:1]
+    pos = np.dstack((x, y))
+
+    pdfs_true = []
+    for motion_pt in motion_pts:
+        rv = multivariate_normal(mean=motion_pt,
+                                cov=[[2.85 * 2.85, 0], [0, 2.92 * 2.92]])
+        pdfs_true.append(rv.pdf(pos))
+    pdf = np.sum(pdfs_true, axis=0)
+    wpdf = pdf / np.sum(pdf)
+    motion_map = wpdf
+
+    assert abs(np.sum(motion_map) - 1) <= 1e-2, print(np.sum(motion_map))
+
+    return motion_map
 
 def reduce_image_stack_to_motion(image_stack):
     motion_pdfs = [motion_pdf(im1, im2) for im1,im2 in zip(image_stack[:-1], image_stack[1:])]
-    pdf = np.sum(motion_pdfs, axis=0)
+    pdf = np.max(motion_pdfs, axis=0)
     wpdf = pdf / np.sum(pdf)
-    # print(torch.Tensor(wpdf).shape)
-    # plt.imshow(wpdf)
-    # plt.pause(12)
-    # exit()
+    
     assert abs(np.sum(wpdf) - 1) <= 1e-2, print(np.sum(wpdf))
 
     return torch.Tensor(wpdf)

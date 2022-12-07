@@ -111,9 +111,11 @@ def create_processed_data(stack=1,
         do_gazes_fused_noop = 'gazes_fused_noop' in data_types and 'gazes_fused_noop' not in group.keys()
         do_motion = 'motion' in data_types and 'motion' not in group.keys()
 
-        print(f"\tLoading images and actions")
-        images_, actions_ = load_action_data(stack, stack_type, stacking_skip,
-                                            from_ix, till_ix, game, game_run)
+        if do_images or do_actions or do_gazes_fused_noop or do_motion:
+            print(f"\tLoading images and actions")
+            images_, actions_ = load_action_data(stack, stack_type, stacking_skip,
+                                                from_ix, till_ix, game, game_run)
+            print(f"images: stacks of shape {len(images_)} x {len(images_[0])} x {len(images_[0][0])} x {len(images_[0][0][0])}")
 
         if do_images:
             print(f"\t\tSaving images dataset")
@@ -191,7 +193,8 @@ def create_processed_data(stack=1,
 
             del motion
     
-    del images_, actions_
+    if do_images or do_actions or do_gazes_fused_noop or do_motion:
+        del images_, actions_
 
     gaze_h5_file.close()
 
@@ -252,8 +255,11 @@ if __name__ == "__main__":
                               till_ix=-1,
                               stacking_skip=1,
                               data_types=[
-                                  'images', 'actions', 'gazes', 'fused_gazes',
-                                #   'gazes_fused_noop'
-                                #   'motion'
+                                  'images',
+                                  'actions',
+                                  'gazes',
+                                  'fused_gazes',
+                                #   'gazes_fused_noop',
+                                  'motion'
                               ])
         combine_processed_data(game, data_type='gazed_images')
