@@ -161,3 +161,6 @@ pip install -e .
 echo -e "\n\nDone setting up Mo-GaS environment!\n"
 
 echo -e "To get started, follow the instructions in the README.md file\n"
+
+# remove trap
+trap - INT

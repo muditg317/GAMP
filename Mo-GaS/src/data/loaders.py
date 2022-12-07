@@ -1,30 +1,17 @@
-import matplotlib.pyplot as plt
-import re
-from subprocess import call
-from tqdm import tqdm
+from src.utils.config import *
 import numpy as np
 import cv2
 from collections import OrderedDict
-import csv
 from yaml import safe_load
 import os
 import pandas as pd
 import h5py
-import sys
-sys.path.append(os.getcwd())
-from src.data.data_utils import stack_data, transform_images
-from src.features.feat_utils import fuse_gazes_noop, fuse_gazes
+from src.data.utils import stack_data
+from src.features.feat_utils import transform_images, fuse_gazes_noop, fuse_gazes
 from torch.utils import data
 import torch
-from src.data.data_utils import ImbalancedDatasetSampler
 from itertools import cycle
 from collections import Counter
-
-with open('src/config.yaml', 'r') as f:
-    config = safe_load(f.read())
-
-INTERIM_DATA_DIR = config['INTERIM_DATA_DIR']
-PROC_DATA_DIR = config['PROC_DATA_DIR']
 
 
 def load_pp_data(game='breakout', game_run='198_RZ_3877709_Dec-03-16-56-11'):

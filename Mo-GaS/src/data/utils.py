@@ -1,26 +1,9 @@
+from src.utils.config import *
 import os
 import csv
-from subprocess import call
-from tqdm import tqdm
 import pandas as pd
-from yaml import safe_load
-import h5py
-import sys
-sys.path.append(os.getcwd())
-from src.features.feat_utils import transform_images, fuse_gazes_noop
 from collections import Counter
 import torch
-import torchvision
-
-with open('src/config.yaml', 'r') as f:
-    config_data = safe_load(f.read())
-
-RAW_DATA_DIR = config_data['RAW_DATA_DIR']
-PROC_DATA_DIR = config_data['PROC_DATA_DIR']
-INTERIM_DATA_DIR = config_data['INTERIM_DATA_DIR']
-CMP_FMT = config_data['CMP_FMT']
-OVERWRITE_INTERIM_GAZE = config_data['OVERWRITE_INTERIM_GAZE']
-VALID_ACTIONS = config_data['VALID_ACTIONS']
 
 
 def get_game_entries_(game_dir):

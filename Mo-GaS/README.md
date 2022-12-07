@@ -26,7 +26,11 @@ The `configure_enviroment.sh` script will handle the installation of the depende
 > **_NOTE:_** Make sure all commands are run from the root of the repository (this folder, `Mo-GaS/`)
 
 ### Data
+#### Configuration
+> **_ATTENTION:_** Check the `GAMES_FOR_TRAINING` key in the `src/config.yaml` files to make sure it only has the games for which you want to download/process/train data. The default is just `breakout` for testing purposes.
+
 #### Downloading
 ```bash
-python src/data/data_setup.py
+python src/data/download.py
+python src/data/process.py
 ```
