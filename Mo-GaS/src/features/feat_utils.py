@@ -210,6 +210,16 @@ def fuse_gazes_noop(images_,
 
     return fused.to(device='cpu')
 
+def make_heatmap(pdf, tol=1e-2):
+    total = np.sum(pdf)
+    if total <= tol:
+        return np.zeros_like(pdf)
+
+    wpdf = pdf / np.sum(pdf)
+    assert abs(np.sum(wpdf) - 1) <= tol, f"Invalid heatmap sum: {np.sum(wpdf)}"
+
+    return wpdf
+
 def motion_pdf(image1, image2):
     in_dim = image1.shape[:2] # w,h
     out_dim = [84, 84]
@@ -224,25 +234,20 @@ def motion_pdf(image1, image2):
     x, y = np.mgrid[0:out_dim[1]:1, 0:out_dim[0]:1]
     pos = np.dstack((x, y))
 
-    pdfs_true = []
+    pdfs_true = [np.zeros(out_dim)]
     for motion_pt in motion_pts:
         rv = multivariate_normal(mean=motion_pt,
                                 cov=[[2.85 * 2.85, 0], [0, 2.92 * 2.92]])
         pdfs_true.append(rv.pdf(pos))
     pdf = np.sum(pdfs_true, axis=0)
-    wpdf = pdf / np.sum(pdf)
-    motion_map = wpdf
 
-    assert abs(np.sum(motion_map) - 1) <= 1e-2, print(np.sum(motion_map))
-
+    motion_map = make_heatmap(pdf)
     return motion_map
 
 def reduce_image_stack_to_motion(image_stack):
     motion_pdfs = [motion_pdf(im1, im2) for im1,im2 in zip(image_stack[:-1], image_stack[1:])]
     pdf = np.max(motion_pdfs, axis=0)
-    wpdf = pdf / np.sum(pdf)
-    
-    assert abs(np.sum(wpdf) - 1) <= 1e-2, print(np.sum(wpdf))
+    wpdf = make_heatmap(pdf)
 
     return torch.Tensor(wpdf)
 

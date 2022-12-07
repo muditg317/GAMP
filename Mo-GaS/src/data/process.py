@@ -115,7 +115,7 @@ def create_processed_data(stack=1,
             print(f"\tLoading images and actions")
             images_, actions_ = load_action_data(stack, stack_type, stacking_skip,
                                                 from_ix, till_ix, game, game_run)
-            print(f"images: stacks of shape {len(images_)} x {len(images_[0])} x {len(images_[0][0])} x {len(images_[0][0][0])}")
+            print(f"images: stacks of shape {len(images_)} x {len(images_[0])} x {images_[0][0].shape}")
 
         if do_images:
             print(f"\t\tSaving images dataset")

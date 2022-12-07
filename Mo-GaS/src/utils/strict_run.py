@@ -2,6 +2,18 @@ import inspect
 import os
 import sys
 
+frame_stack = inspect.stack()
+in_notebook = False
+for frame in frame_stack[::-1]:
+  # print(frame.filename)
+  if frame.filename[0] != '<':
+    if 'ipykernel' in frame.filename:
+      in_notebook = True
+      # print('Running in a notebook', frame.filename)
+      break
+
+
+# if not in_notebook:
 if __name__ == '__main__':
   print('This script is not meant to be run directly')
   sys.exit(1)
@@ -24,8 +36,11 @@ if os.getcwd().split(os.sep)[-1] != 'Mo-GaS':
   while folder.split(os.sep)[-1] != 'Mo-GaS':
     folder = os.path.dirname(folder)
   relative_path = os.path.relpath(folder, os.getcwd())
-  print(f"Please run this script from the root of the Mo-GaS project ({relative_path})")
-  sys.exit(1)
+  if in_notebook:
+    os.chdir(folder)
+  else:
+    print(f"Please run this script from the root of the Mo-GaS project ({relative_path})")
+    sys.exit(1)
 
 sys.path.append(os.getcwd())
 sys.path.append(os.path.dirname(os.path.abspath(main_file)))
