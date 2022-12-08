@@ -117,7 +117,7 @@ def create_processed_data(stack=1,
         if do_images or do_actions or do_gazes_fused_noop:
             print(f"\tLoading images and actions")
             images_, actions_ = load_action_data(stack, stack_type, stacking_skip,
-                                                from_ix, till_ix, game, game_run)
+                                                from_ix, till_ix, game=game, game_run=game_run)
             print(f"images: stacks of shape {len(images_)} x {len(images_[0])} x {images_[0][0].shape}")
 
         if do_images:
@@ -242,11 +242,14 @@ def combine_processed_data(game):
     data = list(game_h5_file[groups[0]].keys())
 
     for datum in tqdm(data):
+        if datum in all_group.keys():
+            print(f"Combined {datum} values for {game} already exist, skipping")
+            continue
         max_shape_datum = (sum([
             game_h5_file[group][datum].shape[0] for group in groups
             if group != 'combined'
         ]), *game_h5_file[groups[0]][datum].shape[1:])
-        print(max_shape_datum, datum)
+        print(f"Combining {game}: {max_shape_datum} {datum} values")
         all_group.create_dataset(
             datum,
             data=game_h5_file[groups[0]][datum][:],
@@ -273,13 +276,5 @@ if __name__ == "__main__":
                               game=game,
                               till_ix=-1,
                               stacking_skip=1,
-                              data_types=[
-                                  'images',
-                                  'actions',
-                                  'gazes',
-                                  'fused_gazes',
-                                #   'gazes_fused_noop',
-                                #   'motion'
-                              ])#,
-                            #   recompute=['motion'])
-        combine_processed_data(game, data_type='gazed_images')
+                              data_types=DATA_TYPES)
+        combine_processed_data(game)

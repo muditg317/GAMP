@@ -1,4 +1,5 @@
 from src.utils.config import *
+from src.data.types import *
 import numpy as np
 import cv2
 from collections import OrderedDict
@@ -15,7 +16,7 @@ from collections import Counter
 
 ASSERT_NOT_RUN(__name__, __file__, "You may have meant to run download.py or preprocess.py")
 
-def load_pp_data(game='breakout', game_run='198_RZ_3877709_Dec-03-16-56-11'):
+def load_pp_data(game:game_t='breakout', game_run:game_run_t='198_RZ_3877709_Dec-03-16-56-11'):
     """Loads interim data for the specified game and game run 
     
     Args:
@@ -64,8 +65,8 @@ def load_gaze_data(stack=1,
                    stacking_skip=1,
                    from_ix=0,
                    till_ix=-1,
-                   game='breakout',
-                   game_run='198_RZ_3877709_Dec-03-16-56-11',
+                   game:game_t='breakout',
+                   game_run:game_run_t='198_RZ_3877709_Dec-03-16-56-11',
                    skip_images=False):
     """Loads and processes gaze data/images for the specified game and game run
     
@@ -119,8 +120,9 @@ def load_action_data(stack=1,
                      stacking_skip=1,
                      from_ix=0,
                      till_ix=10,
-                     game='breakout',
-                     game_run='198_RZ_3877709_Dec-03-16-56-11'):
+                     *,
+                     game:game_t,
+                     game_run:game_run_t):
     """Loads and processes action data/images for the specified game and game run
 
     Args:
@@ -160,9 +162,10 @@ def load_action_data(stack=1,
 
 
 def load_hdf_data(
-    game='breakout',
-    dataset=['564_RZ_4602455_Jul-31-14-48-16'],
-    data_types=['images', 'actions', 'gazes', 'gazes_fused_noop']):
+    *,
+    game:game_t,
+    dataset:list[game_run_t],
+    data_types:list[datatype_t]):
     """ Loads data from the hdf game file 
     
     Args:
@@ -181,8 +184,8 @@ def load_hdf_data(
     game_h5_file = h5py.File(game_file, 'r')
     game_data = []
     # print(dataset, game_h5_file.keys())
-    if dataset == 'combined':
-        dataset = list(game_h5_file.keys())
+    # if len(dataset) == 1 and 'combined':
+    #     dataset = list(game_h5_file.keys())
     game_data = {k: [] for k in data_types}
     # print(dataset)
     actions = []
@@ -194,7 +197,7 @@ def load_hdf_data(
         for datum in data_types:
             # print(data_types)
             assert game_run_data_h5.__contains__(datum), f"{datum} doesn't exist in game {game} {game_run}"
-            # print(f"{datum} found in game {game} {game_run}")
+            # print(f"{datum} found in game {game} {game_run} -- {game_run_data_h5[datum].shape}")
             game_data[datum].append(game_run_data_h5[datum][:])
     return game_data
 
@@ -215,7 +218,7 @@ def load_data_iter(
     ----
      game : game to load the data from, directory of game runs
      data_types : types of data to load, contains atleast on of the following
-                ['frames/images', 'actions', 'gazes',' gazes_fused_noop']
+                ['images', 'actions', 'gazes',' gazes_fused_noop']
 
      dataset : game_run to load the data from, directory of frames and gaze data
      device : device to load the data to cpu or gpu
@@ -237,6 +240,8 @@ def load_data_iter(
     
     """
 
+    print(f"Loading data iterator for [{game} - {dataset}]...\n\tUsing {load_type} load type\n\tFetching data types: {data_types}")
+
     if load_type == 'memory':
         data = load_hdf_data(game=game, dataset=dataset, data_types=data_types)
         x, y_, _, x_g = data.values()
@@ -253,7 +258,7 @@ def load_data_iter(
                                    device=device)
     elif load_type == 'live':
         print("prepping and loading data for {},{}".format(game, dataset))
-        images_, actions_ = load_action_data(stack=config['STACK_SIZE'],
+        images_, actions_ = load_action_data(stack=STACK_SIZE,
                                              game=game,
                                              till_ix=-1,
                                              game_run=dataset)
@@ -299,7 +304,8 @@ class HDF5TorchChunkDataset(data.Dataset):
                  dataset_exclude=['combined'],
                  device=torch.device('cpu'),
                  num_epochs_per_collation=1,
-                 num_groups_to_collate=1,dataset=['combined']):
+                 num_groups_to_collate=1,
+                 dataset=['combined']):
         self.game = game
         self.device = device
         self.dataset = dataset
@@ -315,9 +321,9 @@ class HDF5TorchChunkDataset(data.Dataset):
         self.hdf5_file = h5py.File(hdf5_file, 'r')
         groups = list(sorted(set(self.hdf5_file.keys()) - set(self.dataset_exclude),
                    reverse=True))
-        if isinstance(self.dataset,list) and 'combined' not in self.dataset:
+        if 'combined' not in self.dataset:
             groups = self.dataset
-        
+
         # if dataset != 'combined':
         #     groups = self.dataset_exclude
         

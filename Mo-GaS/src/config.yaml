@@ -34,7 +34,7 @@ HDF_CMP_LEVEL : null
 OVERWRITE_INTERIM_GAZE : False
 STACK_SIZE : 4
 BATCH_SIZE : 32
-DATA_TYPES : ['frames', 'actions', 'gazes', 'gazes_fused_noop']
+DATA_TYPES : ['images', 'actions', 'gazes']
 GAMES_FOR_TRAINING : [
 'breakout',
 ]
