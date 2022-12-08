@@ -1,7 +1,7 @@
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file defines a basic action selection network for Atari gameplay, it should simply be imported elsewhere.")
 
-from src.models.mogas_action_net import MoGaS_ActionNet
+from src.models.mogas_gazed_action_net import MoGaS_Gazed_ActionNet, NOOP_POOL_PARAMS
 from src.models.utils import conv_group_output_shape
 
 import torch
@@ -9,21 +9,15 @@ import numpy as np
 import torch.nn as nn
 
 
-class SelectiveGaze_ActionNet(MoGaS_ActionNet):
+class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
   def __init__(self,
                **kwargs):
     super(SelectiveGaze_ActionNet, self).__init__(**kwargs)
 
-    noop_pool_params = {
-      'kernel_size': (1, 1),
-      'stride': (1, 1),
-      'padding': (0, 0),
-      'dilation': (1, 1),
-    }
     self.gaze_gate = nn.GRU(3136, 1, 1, batch_first=True)
 
     self.conv1 = nn.Conv2d(1, 32, 8, stride=(4, 4))
-    self.pool = nn.MaxPool2d(**noop_pool_params)
+    self.pool = nn.MaxPool2d(**NOOP_POOL_PARAMS)
     # self.pool = lambda x: x
 
     self.conv2 = nn.Conv2d(32, 64, 4, stride=(2, 2))
@@ -33,7 +27,7 @@ class SelectiveGaze_ActionNet(MoGaS_ActionNet):
     # self.softmax_cgl = nn.Softmax(dim=0)
 
     self.conv21 = nn.Conv2d(1, 32, 8, stride=(4, 4))
-    self.pool2 = nn.MaxPool2d(**noop_pool_params)
+    self.pool2 = nn.MaxPool2d(**NOOP_POOL_PARAMS)
     # self.pool = lambda x: x
 
     self.conv22 = nn.Conv2d(32, 64, 4, stride=(2, 2))
@@ -42,7 +36,7 @@ class SelectiveGaze_ActionNet(MoGaS_ActionNet):
     # self.W = torch.nn.Parameter(
     #     torch.Tensor([0.0]), requires_grad=True)
 
-    self.lin_in_shape = self.lin_in_shape()
+    self.lin_in_shape = conv_group_output_shape([self.conv1, self.conv2, self.conv3], self.input_shape)
     self.linear1 = nn.Linear(2*64 * np.prod(self.lin_in_shape), 512)
     self.linear2 = nn.Linear(512, 128)
     self.linear3 = nn.Linear(128, self.num_actions)
@@ -74,17 +68,6 @@ class SelectiveGaze_ActionNet(MoGaS_ActionNet):
         
         x_g = x * x_g ## TODO: for whatever reason they don't apply this during training??
     return x, x_g
-
-  def process_gaze(self, gaze):
-    gaze = torch.exp(gaze)
-    gazes = []
-    for g in gaze:
-        g = (g - torch.min(g)) / (torch.max(g) - torch.min(g))
-        # g = g / torch.sum(g) ## They don't normalize here
-        gazes.append(g)
-    gaze = torch.stack(gazes)
-    del gazes
-    return gaze
 
   def forward(self, x, x_g):
     # frame forward
@@ -155,8 +138,8 @@ class SelectiveGaze_ActionNet(MoGaS_ActionNet):
     return super(SelectiveGaze_ActionNet, self).loss_fn(loss_, acts, targets)
 
   def process_activations_for_inference(self, acts):
-    acts = torch.argmax(torch.softmax(acts, dim=1))
-    
+    acts = super().process_activations_for_inference(acts)
+
     self.writer.add_scalars('actions_gate',{'actions':torch.sign(acts).data.item(),'gate_out':torch.as_tensor(self.gate_output)})
     if self.gate_output == 0:
         self.gate_output = -1

@@ -1,7 +1,7 @@
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file defines a basic action selection network for Atari gameplay, it should simply be imported elsewhere.")
 
-from src.models.mogas_action_net import MoGaS_ActionNet
+from src.models.mogas_gazed_action_net import MoGaS_Gazed_ActionNet, NOOP_POOL_PARAMS
 from src.models.utils import conv_group_output_shape
 
 import torch
@@ -9,27 +9,20 @@ import numpy as np
 import torch.nn as nn
 
 
-class Gazed_ActionNet(MoGaS_ActionNet):
+class Gazed_ActionNet(MoGaS_Gazed_ActionNet):
   def __init__(self,
                **kwargs):
     super(Gazed_ActionNet, self).__init__(**kwargs)
 
-    noop_pool_params = {
-      'kernel_size': (1, 1),
-      'stride': (1, 1),
-      'padding': (0, 0),
-      'dilation': (1, 1),
-    }
-
     self.conv1 = nn.Conv2d(4, 32, 8, stride=(4, 4))
-    self.pool = nn.MaxPool2d(**noop_pool_params)
+    self.pool = nn.MaxPool2d(**NOOP_POOL_PARAMS)
 
     self.conv2 = nn.Conv2d(32, 64, 4, stride=(2, 2))
     self.conv3 = nn.Conv2d(64, 64, 3, stride=(1, 1))
 
     # self.W = torch.nn.Parameter(torch.Tensor([1.0]), requires_grad=True)
 
-    self.lin_in_shape = self.lin_in_shape()
+    self.lin_in_shape = conv_group_output_shape([self.conv1, self.conv2, self.conv3], self.input_shape)
     self.linear1 = nn.Linear(64 * np.prod(self.lin_in_shape), 512)
     self.linear2 = nn.Linear(512, 128)
     self.linear3 = nn.Linear(128, self.num_actions)
@@ -50,16 +43,6 @@ class Gazed_ActionNet(MoGaS_ActionNet):
         x_g = x*x_g
     return x, x_g
 
-  def process_gaze(self,gaze):
-    gaze = torch.exp(gaze)
-    gazes = []
-    for g in gaze:
-      g = (g-torch.min(g))/(torch.max(g)-torch.min(g))
-      g = g/torch.sum(g)
-      gazes.append(g)
-    gaze = torch.stack(gazes)
-    del gazes
-    return gaze
 
   def forward(self, x, x_g):
     # frame forward

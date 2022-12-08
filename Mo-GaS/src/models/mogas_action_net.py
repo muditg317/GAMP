@@ -22,6 +22,7 @@ class MoGaS_ActionNet(nn.Module, ABC):
                load_model                                   = False,                   # load model from disk
                epoch                                        = 0,           # epoch to load model from
                num_actions                                  = len(ACTIONS_ENUM), # 18
+               batch_size                                   = BATCH_SIZE,
                game:game_t                                  = GAMES_FOR_TRAINING[0],
                data_types:list[datatype_t]                  = list(set(DATA_TYPES) - set(['gazes'])),
                dataset_train:game_run_t                     = 'combined', # game_run | 'combined'
@@ -29,7 +30,7 @@ class MoGaS_ActionNet(nn.Module, ABC):
                dataset_val:game_run_t                       = 'combined',
                dataset_val_load_type:dataset_load_type_t    = 'chunked',
                device                                       = torch.device('cuda'),
-               gaze_pred_model:MoGas_GazeNet|None           = None,
+              #  gaze_pred_model:MoGas_GazeNet|None           = None,
                mode:run_mode_t                              = 'train',
                opt:torch.optim.Optimizer|None               = None,
               ):
@@ -38,12 +39,13 @@ class MoGaS_ActionNet(nn.Module, ABC):
     self.data_types = data_types
     self.input_shape = input_shape
     self.num_actions = num_actions
+    self.batch_size = batch_size
 
     self.device = device
 
     self.load_model = load_model
     self.epoch = epoch
-    self.gaze_pred_model = gaze_pred_model
+    # self.gaze_pred_model = gaze_pred_model
     self.mode = mode
     self.opt = opt
 
@@ -62,7 +64,6 @@ class MoGaS_ActionNet(nn.Module, ABC):
       log_dir, "run_{}".format(
         len(os.listdir(log_dir)) if os.path.exists(log_dir) else 0)))
 
-    self.batch_size = BATCH_SIZE
     
     if mode != 'eval':
       self.train_data_iter = load_data_iter(
@@ -101,18 +102,13 @@ class MoGaS_ActionNet(nn.Module, ABC):
               targets: torch.Tensor) -> torch.Tensor:
     return loss_(acts, targets).to(device=self.device)
 
-  def train_loop(self,
+  def train_loop(self, *,
                  opt: torch.optim.Optimizer,
                  lr_scheduler: torch.optim.lr_scheduler._LRScheduler|None,
                  loss_function: torch.nn.modules.loss._Loss,
-                 batch_size=BATCH_SIZE,
-                 gaze_pred:MoGas_GazeNet=None,
                  GAME_PLAY_FREQ=1):
     self.loss_ = loss_function
     self.opt = opt
-    self.gaze_pred_model = gaze_pred
-    if self.gaze_pred_model is not None:
-      self.gaze_pred_model.eval()
 
     if self.load_model:
       self.load_model_at_epoch(self.epoch, load_optimizer=True)
