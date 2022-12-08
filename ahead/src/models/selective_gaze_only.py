@@ -210,7 +210,7 @@ class SGAZED_ACTION_SL(nn.Module):
         out_shape = self.out_shape(self.conv3, out_shape)
         return out_shape
 
-    def loss_fn(self, loss_, acts, targets, x_g):
+    def loss_fn(self, loss_, acts, targets):
         ce_loss = loss_(acts, targets).to(device=self.device)
         # cg_loss = self. #CGL
         return ce_loss
@@ -227,12 +227,12 @@ class SGAZED_ACTION_SL(nn.Module):
     #     y_pred = torch.clip(y_pred, epsilon, 1)
     #     return torch.sum(y_true * torch.log(y_true2 / y_pred))  # for old Keras need axis = [1,2,3]
 
-    def resized_heatmap(self, heatmap, size):
-        heatmap = heatmap.squeeze()
-        heatmap = heatmap.cpu().detach().numpy()
-        heatmap = cv2.resize(heatmap, size)
-        heatmap = torch.from_numpy(heatmap).unsqueeze(0).unsqueeze(0)
-        return heatmap
+    # def resized_heatmap(self, heatmap, size):
+    #     heatmap = heatmap.squeeze()
+    #     heatmap = heatmap.cpu().detach().numpy()
+    #     heatmap = cv2.resize(heatmap, size)
+    #     heatmap = torch.from_numpy(heatmap).unsqueeze(0).unsqueeze(0)
+    #     return heatmap
 
     def train_loop(self,
                    opt,
@@ -282,7 +282,7 @@ class SGAZED_ACTION_SL(nn.Module):
                 # acts, feat = self.forward(x, x_g) CGL
                 # loss = self.loss_fn(loss_, acts, y, feat, x_g)#CGL
                 acts = self.forward(x, x_g)
-                loss = self.loss_fn(loss_, acts, y, x_g)
+                loss = self.loss_fn(loss_, acts, y)
                 loss.backward()
                 self.opt.step()
                 self.writer.add_scalar('Loss', loss.data.item(), eix)
@@ -386,13 +386,13 @@ class SGAZED_ACTION_SL(nn.Module):
                         x = x[:, -1].unsqueeze(1)
 
                         x_g = (x * x_g)
-                        g_cgl = x_g
+                        # g_cgl = x_g
                         # x_g = x_g.unsqueeze(1).expand(x.shape)
 
                 # acts, feat = self.forward(x, x_g) #CGL
                 acts= self.forward(x, x_g)
                 # loss += self.loss_fn(self.loss_, acts, y, feat).data.item()
-                # loss += self.loss_fn(self.loss_, acts, y).data.item() #CGL
+                loss += self.loss_fn(self.loss_, acts, y).data.item() #CGL
 
                 acc += (torch.argmax(acts,dim=1) == y).sum().data.item()
                 ix += y.shape[0]

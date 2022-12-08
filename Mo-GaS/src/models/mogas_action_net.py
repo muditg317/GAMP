@@ -2,27 +2,21 @@ from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file is just a base class for other action selection models.")
 from src.data.types import *
 from src.models.types import *
-from src.models.utils import conv_group_output_shape
-from src.models.mogas_gaze_network import MoGas_GazeNetwork
+from src.models.mogas_gaze_net import MoGas_GazeNet
 
 from abc import ABC, abstractmethod
-from typing import List, Tuple
 import torch
-import numpy as np
 import torch.nn as nn
-from math import floor
 from torch.utils.tensorboard import SummaryWriter
-from yaml import safe_load
 import os
 from src.data.utils import ImbalancedDatasetSampler
 from src.data.loaders import load_data_iter
-import matplotlib.pyplot as plt
 from src.features.feat_utils import image_transforms
 # np.random.seed(42)
 # import gym
 # from gym.wrappers import FrameStack, RecordVideo
 
-class MoGaS_ActionNetwork(nn.Module, ABC):
+class MoGaS_ActionNet(nn.Module, ABC):
   def __init__(self,
                input_shape:tuple[int,int]                   = (84, 84),
                load_model                                   = False,                   # load model from disk
@@ -35,10 +29,11 @@ class MoGaS_ActionNetwork(nn.Module, ABC):
                dataset_val:game_run_t                       = 'combined',
                dataset_val_load_type:dataset_load_type_t    = 'chunked',
                device                                       = torch.device('cuda'),
-               gaze_pred_model:MoGas_GazeNetwork|None       = None,
-               mode:run_mode_t                              = 'train'
+               gaze_pred_model:MoGas_GazeNet|None           = None,
+               mode:run_mode_t                              = 'train',
+               opt:torch.optim.Optimizer|None               = None,
               ):
-    super(MoGaS_ActionNetwork, self).__init__()
+    super(MoGaS_ActionNet, self).__init__()
     self.game = game
     self.data_types = data_types
     self.input_shape = input_shape
@@ -49,6 +44,8 @@ class MoGaS_ActionNetwork(nn.Module, ABC):
     self.load_model = load_model
     self.epoch = epoch
     self.gaze_pred_model = gaze_pred_model
+    self.mode = mode
+    self.opt = opt
 
     model_save_dir = os.path.join(MODEL_SAVE_DIR, game, dataset_train)
     if not os.path.exists(model_save_dir):
@@ -90,6 +87,10 @@ class MoGaS_ActionNetwork(nn.Module, ABC):
       )
 
   @abstractmethod
+  def add_extra_inputs(self, x: torch.Tensor, *other_data) -> list[torch.Tensor]:
+    return x,
+
+  @abstractmethod
   def forward(self, x: torch.Tensor, *extra_inputs) -> torch.Tensor | tuple[torch.Tensor,...]:
     pass
 
@@ -98,15 +99,14 @@ class MoGaS_ActionNetwork(nn.Module, ABC):
               loss_: torch.nn.modules.loss._Loss,
               acts: torch.Tensor,
               targets: torch.Tensor) -> torch.Tensor:
-    ce_loss = loss_(acts, targets).to(device=self.device)
-    return ce_loss
+    return loss_(acts, targets).to(device=self.device)
 
   def train_loop(self,
                  opt: torch.optim.Optimizer,
                  lr_scheduler: torch.optim.lr_scheduler._LRScheduler|None,
                  loss_function: torch.nn.modules.loss._Loss,
                  batch_size=BATCH_SIZE,
-                 gaze_pred:MoGas_GazeNetwork=None,
+                 gaze_pred:MoGas_GazeNet=None,
                  GAME_PLAY_FREQ=1):
     self.loss_ = loss_function
     self.opt = opt
@@ -116,9 +116,11 @@ class MoGaS_ActionNetwork(nn.Module, ABC):
 
     if self.load_model:
       self.load_model_at_epoch(self.epoch, load_optimizer=True)
+    else:
+      self.epoch = -1
     eix = 0
-    start_epoch = self.epoch
-    end_epoch = self.epoch+20
+    start_epoch = self.epoch+1
+    end_epoch = self.epoch+300
     for epoch in range(start_epoch,end_epoch):
       print(f"Training epoch {epoch}/{end_epoch}...")
       for i, data in enumerate(self.train_data_iter):
@@ -189,9 +191,6 @@ class MoGaS_ActionNetwork(nn.Module, ABC):
     else:
       return x, y
 
-  @abstractmethod
-  def compute_extra_inputs(self, x: torch.Tensor, *other_data) -> list[torch.Tensor]:
-    pass
 
   def run_inputs(self, x: torch.Tensor, *other_data):
     """
@@ -207,7 +206,10 @@ class MoGaS_ActionNetwork(nn.Module, ABC):
       acts: the model outputs
       extra_outputs: any extra outputs from the model
     """
-    extra_inputs = self.compute_extra_inputs(x, *other_data)
+    x = self.add_extra_inputs(x, *other_data)
+    extra_inputs = []
+    if isinstance(x, tuple):
+      x, *extra_inputs = x
 
     acts = self.forward(x, *extra_inputs)
     extra_outputs = []
@@ -221,11 +223,15 @@ class MoGaS_ActionNetwork(nn.Module, ABC):
       self.eval()
 
       _, acts, _ = self.run_inputs(x_var)
-      result = acts.argmax(dim=1)
+      result = self.process_activations_for_inference(acts)
 
       self.train()
 
     return result
+
+  @abstractmethod
+  def process_activations_for_inference(self, acts):
+    return acts.argmax(dim=1)
 
   def load_model_at_epoch(self, epoch: int, load_optimizer=False):
     self.epoch = epoch
@@ -288,8 +294,8 @@ class MoGaS_ActionNetwork(nn.Module, ABC):
 
     transform_images = image_transforms()
 
-    env = gym.make(GYM_ENV_MAP[self.game], full_action_space=True,frameskip=4)
-    env = FrameStack(env, 4)
+    env = gym.make(GYM_ENV_MAP[self.game], full_action_space=True,frameskip=1)
+    env = FrameStack(env, STACK_SIZE)
     # env = Monitor(env,self.game,force=True)
 
     t_rew = 0

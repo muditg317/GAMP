@@ -15,7 +15,7 @@ from src.data.loaders import HDF5TorchDataset, load_data_iter
 np.random.seed(42)
 
 
-class MoGas_GazeNetwork(nn.Module):
+class MoGas_GazeNet(nn.Module):
     def __init__(self,
                  input_shape=(84, 84),
                  load_model=False,
@@ -29,7 +29,7 @@ class MoGas_GazeNetwork(nn.Module):
                  dataset_val_load_type='disk',
                  device=torch.device('cpu'),
                  mode='train'):
-        super(CNN_GAZE, self).__init__()
+        super(MoGas_GazeNet, self).__init__()
         self.game = game
         self.data_types = data_types
         self.input_shape = input_shape
