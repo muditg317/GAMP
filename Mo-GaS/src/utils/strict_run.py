@@ -12,11 +12,15 @@ for frame in frame_stack[::-1]:
       # print('Running in a notebook', frame.filename)
       break
 
+def ASSERT_NOT_RUN(_name_, _file_=None, _exit_=True, extra_msg=None):
+  if _name_ == '__main__':
+    print(f"This script{f' ({os.path.relpath(_file_, os.getcwd())})' if _file_ is not None else ''} is not meant to be run directly")
+    if extra_msg is not None:
+      print(extra_msg)
+    if _exit_:
+      sys.exit(1)
 
-# if not in_notebook:
-if __name__ == '__main__':
-  print('This script is not meant to be run directly')
-  sys.exit(1)
+ASSERT_NOT_RUN(__name__, __file__)
 
 if 'Mo-GaS' not in os.getcwd().split(os.sep):
   print('Please run this script from the root of the project (Mo-GaS)')

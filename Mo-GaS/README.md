@@ -32,5 +32,5 @@ The `configure_enviroment.sh` script will handle the installation of the depende
 #### Downloading
 ```bash
 python src/data/download.py
-python src/data/process.py
+python src/data/preprocess.py
 ```

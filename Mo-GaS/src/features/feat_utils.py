@@ -1,10 +1,12 @@
-import cv2
+from src.utils.strict_run import ASSERT_NOT_RUN
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from scipy.stats import multivariate_normal
 from torchvision import transforms
 import torch
+
+ASSERT_NOT_RUN(__name__, __file__)
 
 NUM_CLUSTERS = 20
 kmeans = KMeans(init='k-means++', n_clusters=NUM_CLUSTERS, n_init=10)

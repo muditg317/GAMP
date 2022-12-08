@@ -22,4 +22,4 @@ for url in urls:
 
 
 print(f"Data created at {PROC_DATA_DIR} and {INTERIM_DATA_DIR}")
-print(f"Data should now be preprocessed using\n\tpython src/data/process.py")
+print(f"Data should now be preprocessed using\n\tpython src/data/preprocess.py")

@@ -13,6 +13,7 @@ import torch
 from itertools import cycle
 from collections import Counter
 
+ASSERT_NOT_RUN(__name__, __file__, "You may have meant to run download.py or preprocess.py")
 
 def load_pp_data(game='breakout', game_run='198_RZ_3877709_Dec-03-16-56-11'):
     """Loads interim data for the specified game and game run 
@@ -432,15 +433,3 @@ class HDF5TorchDataset(data.Dataset):
                 tensors.append(
                     torch.Tensor(self.group[datum][ix]).to(device=self.device))
         return tensors
-
-
-if __name__ == "__main__":
-
-    ds = HDF5TorchChunkDataset(game='breakout',
-                               num_groups_to_collate=2,
-                               num_epochs_per_collation=1)
-
-    dl = load_data_iter(game='breakout', batch_size=1, load_type='chunked')
-
-    for x in dl:
-        print(x.keys())

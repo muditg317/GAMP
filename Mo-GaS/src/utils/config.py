@@ -1,12 +1,10 @@
+
+from src.utils.strict_run import *
 import os
 import sys
 from yaml import safe_load
 
-if __name__ == '__main__':
-  print('This script is not meant to be run directly')
-  sys.exit(1)
-
-from src.utils.strict_run import *
+ASSERT_NOT_RUN(__name__, __file__)
 
 with open('src/config.yaml', 'r') as f:
     config_data = safe_load(f.read())
