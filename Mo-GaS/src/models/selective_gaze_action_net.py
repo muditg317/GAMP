@@ -1,5 +1,5 @@
 from src.utils.config import *
-ASSERT_NOT_RUN(__name__, __file__, "This file defines a basic action selection network for Atari gameplay, it should simply be imported elsewhere.")
+ASSERT_NOT_RUN(__name__, __file__, "This file defines a selective-gaze-usage action selection network for Atari gameplay, it should simply be imported elsewhere.")
 
 from src.models.mogas_gazed_action_net import MoGaS_Gazed_ActionNet, NOOP_POOL_PARAMS
 from src.models.utils import conv_group_output_shape

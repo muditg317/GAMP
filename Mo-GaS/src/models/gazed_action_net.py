@@ -1,5 +1,5 @@
 from src.utils.config import *
-ASSERT_NOT_RUN(__name__, __file__, "This file defines a basic action selection network for Atari gameplay, it should simply be imported elsewhere.")
+ASSERT_NOT_RUN(__name__, __file__, "This file defines an action selection network that uses gaze for Atari gameplay, it should simply be imported elsewhere.")
 
 from src.models.mogas_gazed_action_net import MoGaS_Gazed_ActionNet, NOOP_POOL_PARAMS
 from src.models.utils import conv_group_output_shape
@@ -74,7 +74,7 @@ class Gazed_ActionNet(MoGaS_Gazed_ActionNet):
 
     # combine gaze conv + frame conv
     x = 0.5 * (x + x_g)
-    x = x.view(-1, 64 * np.prod(self.lin_in_shape))
+    x = x.view(-1, 64 * np.prod(self.lin_in_shape)) # reshape to [batch_N, flattened]
     x = self.linear1(x)
     x = self.linear2(x)
     x = self.linear3(x)
