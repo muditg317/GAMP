@@ -12,11 +12,19 @@ for frame in frame_stack[::-1]:
       # print('Running in a notebook', frame.filename)
       break
 
-def ASSERT_NOT_RUN(_name_, _file_=None, _exit_=True, extra_msg=None):
+def ASSERT_NOT_RUN(_name_, _file_=None, extra_msg=None, _exit_=True):
   if _name_ == '__main__':
     print(f"This script{f' ({os.path.relpath(_file_, os.getcwd())})' if _file_ is not None else ''} is not meant to be run directly")
     if extra_msg is not None:
-      print(extra_msg)
+      print('\t', extra_msg)
+    if _exit_:
+      sys.exit(1)
+
+def ASSERT_BEING_RUN(_name_, _file_=None, extra_msg=None, _exit_=True):
+  if _name_ != '__main__':
+    print(f"This script{f' ({os.path.relpath(_file_, os.getcwd())})' if _file_ is not None else ''} is meant to be run directly, not imported")
+    if extra_msg is not None:
+      print('\t', extra_msg)
     if _exit_:
       sys.exit(1)
 

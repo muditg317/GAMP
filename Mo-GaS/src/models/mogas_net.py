@@ -11,9 +11,6 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 import os
 
-# import gym
-# from gym.wrappers import FrameStack, RecordVideo
-
 class MoGaS_Net(nn.Module, ABC):
   def __init__(self, *,
                data_types:list[datatype_t],
@@ -58,12 +55,11 @@ class MoGaS_Net(nn.Module, ABC):
       log_dir, "run_{}".format(
         len(os.listdir(log_dir)) if os.path.exists(log_dir) else 0)))
 
-    
     if self.mode != 'eval':
       self.train_data_iter = load_data_iter(
         game=self.game,
         data_types=self.data_types,
-        dataset=[dataset_train],
+        datasets=[dataset_train],
         dataset_exclude=[dataset_val],
         device=self.device,
         batch_size=self.batch_size,
@@ -74,7 +70,7 @@ class MoGaS_Net(nn.Module, ABC):
       self.val_data_iter = load_data_iter(
         game=self.game,
         data_types=self.data_types,
-        dataset=[dataset_val],
+        datasets=[dataset_val],
         dataset_exclude=[dataset_train],
         device=self.device,
         batch_size=self.batch_size,

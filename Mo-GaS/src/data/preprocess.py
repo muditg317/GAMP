@@ -104,7 +104,7 @@ def create_processed_data(stack=1,
             print(f"Creating processed data for [{game} - {game_run}]")
             group = game_h5_file.create_group(game_run)
         else:
-            print(f"Some processed data for [{game} - {game_run}] already exists")
+            print(f"Some processed data for [{game} - {game_run}] already exists\n\t{game_h5_file[game_run].keys()}")
             group = game_h5_file[game_run]
 
         do_images = 'images' in data_types and ('images' not in group.keys() or 'images' in recompute)
@@ -150,8 +150,8 @@ def create_processed_data(stack=1,
                                     stacking_skip,
                                     from_ix,
                                     till_ix,
-                                    game,
-                                    game_run,
+                                    game=game,
+                                    game_run=game_run,
                                     skip_images=True)
 
             if do_gazes_fused_noop:
@@ -269,6 +269,26 @@ def combine_processed_data(game):
     game_h5_file.close()
 
 
+def remove_combined_data(game):
+    """ Reads the specified hdf5 file, and deletes the combined group if present.
+
+        Args:
+        ----
+            game -- name of the hdf5 file for which to remove combinations, assumed to be in processed directory, without the extension
+
+        Returns:
+        ----
+            None
+    """
+
+    game_h5_filename = os.path.join(PROC_DATA_DIR, game + '.hdf5')
+    game_h5_file = h5py.File(game_h5_filename, 'a')
+
+    groups = list(game_h5_file.keys())
+    if 'combined' in groups:
+        del game_h5_file['combined']
+
+
 if __name__ == "__main__":
     for game in GAMES_FOR_TRAINING:
         create_interim_files(game=game)
@@ -277,4 +297,5 @@ if __name__ == "__main__":
                               till_ix=-1,
                               stacking_skip=1,
                               data_types=DATA_TYPES)
-        combine_processed_data(game)
+        # combine_processed_data(game)
+        # remove_combined_data(game)
