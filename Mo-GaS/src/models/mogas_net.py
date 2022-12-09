@@ -67,6 +67,7 @@ class MoGaS_Net(nn.Module, ABC):
         load_type=dataset_train_load_type,
       )
 
+      self.val_data_iter = None
       # self.val_data_iter = load_data_iter(
       #   game=self.game,
       #   data_types=self.data_types,

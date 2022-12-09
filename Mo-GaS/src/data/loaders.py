@@ -168,7 +168,7 @@ def load_hdf_data(
   datasets:list[game_run_t],
   data_types:list[datatype_t],
   device=None,
-  hdf5_file: h5py.File=None):
+  hdf5_file: h5py.File=None) -> dict[datatype_t, list[torch.Tensor]]:
   """ Loads data from the hdf game file 
   
   Args:
@@ -370,12 +370,12 @@ class HDF5TorchChunkDataset(data.Dataset):
 
     for dtype in self.curr_collation_data:
       datum = self.curr_collation_data[dtype]
-      datum = torch.concatenate(datum, axis=0)
+      datum: torch.Tensor = torch.concatenate(datum, axis=0)
       if dtype == 'actions':
-        datum = torch.LongTensor(datum).squeeze()[:, -1].to(
+        datum = datum.long().squeeze()[:, -1].to(
           device=self.device)
       else:
-        datum = torch.Tensor(datum).squeeze().to(device=self.device)
+        datum = datum.squeeze().to(device=self.device)
       self.curr_collation_data[dtype] = datum.detach()
     group_lens = [
       self.curr_collation_data[datum].shape[0]

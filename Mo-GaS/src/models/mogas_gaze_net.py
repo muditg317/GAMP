@@ -112,6 +112,9 @@ class MoGas_GazeNet(MoGaS_Net, ABC):
     return x, y
 
   def val_loss(self):
+    if self.val_data_iter is None:
+      print(f"WARNING: No validation data set, returning 0.0")
+      return torch.Tensor([0.0])
     self.eval()
     val_loss = []
     with torch.no_grad():

@@ -80,14 +80,15 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
         # self.writer.add_histogram("preds", acts)
         print(f"Epoch {epoch} complete:")
         print(f"\tLoss: {loss.data.item()}")
+        print(f"\tLR: {lr_scheduler.get_last_lr()[0]}")
         print(f"\tComputing accuracy...", end='')
         accuracy = self.accuracy()
         print(f"\tAccuracy: {accuracy}")
         self.writer.add_scalar('Train Acc', accuracy, epoch)
         if lr_scheduler is not None:
-          self.writer.add_scalar('Learning Rate', lr_scheduler.get_lr()[0], epoch)
+          self.writer.add_scalar('Learning Rate', lr_scheduler.get_last_lr()[0], epoch)
 
-        self.calc_val_metrics(epoch)
+        # self.calc_val_metrics(epoch)
 
       if epoch % GAME_PLAY_FREQ == 0:
         self.game_play(epoch)
@@ -171,6 +172,9 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
     return acc
 
   def calc_val_metrics(self, epoch: int):
+    if self.val_data_iter is None:
+      print(f"Skipping validation metrics")
+      return
     prev_train_mode = self.training
     self.eval()
 
