@@ -2,7 +2,7 @@ from src.utils.config import *
 ASSERT_BEING_RUN(__name__, __file__, "This file should not be imported. It runs src/models/selective_gaze_action_net.py and visualizes the results")
 from src.data.types import *
 from src.models.cnn_gaze_net import CNN_GazeNet
-from src.models.selective_gaze_action_net import SelectiveGaze_ActionNet
+from src.models.selective_gm_action_net import SelectiveGazeAndMotion_ActionNet
 from src.features.feat_utils import image_transforms
 
 import torch
@@ -48,15 +48,15 @@ gaze_net = CNN_GazeNet(game=game,
 gaze_net.load_model_at_epoch(gaze_net_cpt)
 gaze_net.eval()
 
-action_net = SelectiveGaze_ActionNet(game=game,
-                                     data_types=data_types,
-                                     dataset_train=dataset_train,
-                                     dataset_train_load_type=None,
-                                     dataset_val=dataset_val,
-                                     dataset_val_load_type=None,
-                                     device=device,
-                                     mode=EVAL_MODE,
-                                     gaze_pred_model=gaze_net).to(device=device)
+action_net = SelectiveGazeAndMotion_ActionNet(game=game,
+                                              data_types=data_types,
+                                              dataset_train=dataset_train,
+                                              dataset_train_load_type=None,
+                                              dataset_val=dataset_val,
+                                              dataset_val_load_type=None,
+                                              device=device,
+                                              mode=EVAL_MODE,
+                                              gaze_pred_model=gaze_net).to(device=device)
 action_net.load_model_at_epoch(action_cpt)
 action_net.eval()
 
@@ -87,44 +87,55 @@ for i_episode in range(start_episode,end_episode,1):
     observation = torch.stack(
       [transform_images(o.__array__()).squeeze() for o in observation]).unsqueeze(0).to(device=device)
 
-    observation, gaze, acts, _ = action_net.run_inputs(observation)
-    gaze = gaze[0]
+    observation, extra_in, acts, _ = action_net.run_inputs(observation)
+    gaze, motion = extra_in
 
-    # gaze_ = gaze.squeeze().cpu().numpy()
-    # gaze_top90 = np.percentile(gaze_,90)
-    # gaze_ = np.clip(gaze_,gaze_top90,1)
-    
-    # gaze_ = np.array(cv2.resize(gaze_,(160,210))*255,dtype=np.uint8)
-    # gaze_ = cv2.applyColorMap(gaze_,cv2.COLORMAP_INFERNO)
-    # gaze_ = obs[-1]+gaze_
-
-
-    # cv2.imshow("gaze_pred_normalized",gaze_)
-    # cv2.waitKey(5)
-
-    # gaze_ = gaze[0][0].cpu().numpy()
-    
-    # gaze_ = np.array(cv2.resize(gaze_,(160,210))*255,dtype=np.uint8)
-    # gaze_ = cv2.applyColorMap(gaze_,cv2.COLORMAP_TURBO)
 
     obs = cv2.resize(obs[-1],(160,210))
     obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
-    # gaze_ = cv2.addWeighted(gaze_,0.25,obs,0.5,0)*2
+
 
     gaze_true = gaze.squeeze().cpu().numpy()
-    # gaze_true = (gaze / observation).squeeze().cpu().numpy()
-    gaze_true = (gaze_true - np.min(gaze_true)) / (np.max(gaze_true) - np.min(gaze_true))
+    if np.max(gaze_true) - np.min(gaze_true) == 0:
+      gaze_true = np.zeros_like(gaze_true)
+    else:
+      gaze_true = (gaze_true - np.min(gaze_true)) / (np.max(gaze_true) - np.min(gaze_true))
 
     gaze_true = np.array(cv2.resize(gaze_true,(160,210))*255,dtype=np.uint8)
-    gaze_true = cv2.applyColorMap(gaze_true,cv2.COLORMAP_TURBO)
-    
-    gaze_ = cv2.addWeighted(gaze_true,0.25,obs,0.5,0)*2
-    cv2.imshow("gaze_pred_normalized",gaze_)
+    gaze_true = cv2.applyColorMap(gaze_true,cv2.COLORMAP_OCEAN)
+
+
+    motion_true = motion.squeeze().cpu().numpy()
+    if np.max(motion_true) - np.min(motion_true) == 0:
+      motion_true = np.zeros_like(motion_true)
+    else:
+      motion_true = (motion_true - np.min(motion_true)) / (np.max(motion_true) - np.min(motion_true))
+
+    motion_true = np.array(cv2.resize(motion_true,(160,210))*255,dtype=np.uint8)
+    motion_true = cv2.applyColorMap(motion_true,cv2.COLORMAP_HOT)
+
+
+    gaze_ = cv2.addWeighted(gaze_true,0.25*action_net.gaze_gate_output[0],obs,0.5,0)*2
+    motion_ = cv2.addWeighted(motion_true,0.25*action_net.motion_gate_output[0],obs,0.5,0)*2
+
+    cv2.imshow("gaze_and_motion_normalized", cv2.addWeighted(gaze_,0.5,motion_,0.5,0))
+    # cv2.imshow("motion_pred_normalized",motion_)
+    # cv2.imshow("gaze_pred_normalized",gaze_)
+    # cv2.imshow("obs",obs)
     cv2.waitKey(1)
-    
+
+
     action = action_net.process_activations_for_inference(acts)
-    if game == 'breakout' and np.random.random() < 0.1:
-      action = ACTIONS_ENUM['PLAYER_A_FIRE']
+    if game == 'breakout':
+      if action == ACTIONS_ENUM['PLAYER_A_FIRE']:
+        # print(f"{t}: Agent tried to fire")
+        if np.sum(motion_true) == 0:
+          # print(f"{t}: No motion detected!!")
+          print(f"{t}: Agent tried to fire with no motion detected!!")
+        # action = ACTIONS_ENUM['NOOP']
+      if np.sum(motion_true) == 0 and np.random.random() < 0.1:
+        print(f"{t}: Forced fire")
+        action = ACTIONS_ENUM['PLAYER_A_FIRE']
     observation, reward, done, trun, info = env.step(action)
 
     ep_rew += reward

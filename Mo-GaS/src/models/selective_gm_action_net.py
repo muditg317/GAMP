@@ -72,9 +72,9 @@ class SelectiveGazeAndMotion_ActionNet(MoGaS_Gazed_ActionNet):
         x_g = self.gaze_pred_model.infer(x)
         x_g = self.process_gaze(x_g).unsqueeze(1)
 
-        x = x[:, -1].unsqueeze(1)
-        
-        # x_g = x * x_g ## Moved scaling to forward pass
+    x = x[:, -1].unsqueeze(1)
+    
+    # x_g = x * x_g ## Moved scaling to forward pass
     
     return x, x_g, x_m
 

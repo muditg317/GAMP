@@ -292,10 +292,12 @@ def remove_combined_data(game):
 if __name__ == "__main__":
     for game in GAMES_FOR_TRAINING:
         try:
-            print(f"Processing {game}")
+            print(f"Preprocessing {game}")
             processed_file = os.path.join(PROC_DATA_DIR, game + '.hdf5')
             if not os.path.exists(processed_file):
+                print(f"Creating interim data {game}")
                 create_interim_files(game=game)
+            print(f"Creating processed data {game}")
             create_processed_data(stack=STACK_SIZE,
                                 game=game,
                                 till_ix=-1,

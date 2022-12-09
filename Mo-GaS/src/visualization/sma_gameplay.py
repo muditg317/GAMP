@@ -93,8 +93,15 @@ for i_episode in range(start_episode,end_episode,1):
     cv2.waitKey(1)
     
     action = action_net.process_activations_for_inference(acts)
-    if game == 'breakout' and np.random.random() < 0.1:
-      action = ACTIONS_ENUM['PLAYER_A_FIRE']
+    
+    if game == 'breakout':
+      if action == ACTIONS_ENUM['PLAYER_A_FIRE']:
+        print("Agent tried to fire")
+        if np.sum(motion_true) == 0:
+          print("\t While there was no motion!!")
+          # action = ACTIONS_ENUM['NOOP']
+      if np.random.random() < 0.1:
+        action = ACTIONS_ENUM['PLAYER_A_FIRE']
     observation, reward, done, trun, info = env.step(action)
 
     ep_rew += reward

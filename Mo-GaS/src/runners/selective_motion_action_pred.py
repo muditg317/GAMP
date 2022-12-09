@@ -14,12 +14,19 @@ args = parser.parse_args()
 game:game_t = args.game
 
 MODE:run_mode_t = 'train'
-completed_epochs = 100
+completed_epochs = {
+  'breakout': {
+    '527_RZ_4153166_Jul-26-10-00-12': 100,
+  },
+}
+completed_epochs = completed_epochs[game] if game in completed_epochs else {}
 
 train_datasets = val_datasets = ['combined']
 
 if game == 'phoenix':
-  val_datasets = ['606_RZ_5215078_Aug-07-16-59-46', '600_RZ_5203429_Aug-07-13-44-39',
+  train_datasets = ['214_RZ_7226016_Jan-11-11-04-01']
+  val_datasets = ['214_RZ_7226016_Jan-11-11-04-01',
+                  '606_RZ_5215078_Aug-07-16-59-46', '600_RZ_5203429_Aug-07-13-44-39',
                   '598_RZ_5120717_Aug-06-14-53-30', '574_RZ_4682055_Aug-01-12-54-58',
                   '565_RZ_4604537_Jul-31-15-22-57', '550_RZ_4513408_Jul-30-14-04-09',
                   '540_RZ_4425986_Jul-29-13-47-10']
@@ -65,12 +72,14 @@ data_types = ['images', 'actions']
 
 train_dataset = train_datasets[0]
 val_dataset = val_datasets[0]
+completed_epochs = completed_epochs[train_dataset] if train_dataset in completed_epochs else 0
+
 action_net = SelectiveMotion_ActionNet(game=game,
                                       data_types=data_types,
                                       dataset_train=train_dataset,
-                                      dataset_train_load_type='chunked',
+                                      dataset_train_load_type='disk',
                                       dataset_val=val_dataset,
-                                      dataset_val_load_type='chunked',
+                                      dataset_val_load_type='disk',
                                       device=device,
                                       mode=MODE,
                                       load_model=True,

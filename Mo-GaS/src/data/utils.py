@@ -105,6 +105,8 @@ class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
         self.num_samples = len(self.indices)
         label_to_count = Counter(dataset.labels)
 
+        print(f"Imbalanced sampler with counts: {label_to_count}")
+
         weights = [1.0 / label_to_count[ix] for ix in dataset.labels]
 
         self.weights = torch.DoubleTensor(weights)
