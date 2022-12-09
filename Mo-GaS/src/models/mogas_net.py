@@ -5,6 +5,7 @@ from src.data.utils import ImbalancedDatasetSampler
 from src.data.loaders import load_data_iter
 from src.data.types import *
 from src.models.types import *
+from src.models.utils import dataset_to_list_and_str
 
 from abc import ABC, abstractmethod
 import torch
@@ -41,19 +42,8 @@ class MoGaS_Net(nn.Module, ABC):
     self.mode = mode
     self.opt = opt
 
-    train_dataset_str = dataset_train
-    train_dataset_list = dataset_train
-    if isinstance(dataset_train, list):
-      train_dataset_str = '__'.join([dt[:5] for dt in dataset_train])
-    else:
-      train_dataset_list = [train_dataset_list]
-
-    val_dataset_str = dataset_val
-    val_dataset_list = dataset_val
-    if isinstance(dataset_val, list):
-      val_dataset_str = '__'.join([dt[:5] for dt in dataset_val])
-    else:
-      val_dataset_list = [val_dataset_list]
+    train_dataset_list, train_dataset_str = dataset_to_list_and_str(dataset_train)
+    val_dataset_list, val_dataset_str = dataset_to_list_and_str(dataset_val)
 
     model_save_dir = os.path.join(MODEL_SAVE_DIR, game, train_dataset_str)
     if not os.path.exists(model_save_dir):

@@ -5,6 +5,8 @@ from src.data.types import *
 from src.data.loaders import load_hdf_data
 from src.models.types import run_mode_t
 from src.models.selective_motion_action_net import SelectiveMotion_ActionNet
+from src.models.utils import dataset_to_list_and_str
+
 import torch
 import argparse
 # pylint: disable=all
@@ -71,17 +73,17 @@ elif game == 'centipede':
 # val_datasets = ['']
 device = torch.device('cuda')
 
-data_types = ['images', 'actions']
+data_types = ['images', 'actions', 'motion']
 
-train_dataset = train_datasets[0]
-val_dataset = val_datasets[0]
-completed_epochs = completed_epochs[train_dataset] if train_dataset in completed_epochs else 0
+train_dataset_list, train_dataset_str = dataset_to_list_and_str(train_datasets)
+val_dataset_list, val_dataset_str = dataset_to_list_and_str(val_datasets)
+completed_epochs = completed_epochs[train_dataset_str] if train_dataset_str in completed_epochs else 0
 
 action_net = SelectiveMotion_ActionNet(game=game,
                                       data_types=data_types,
-                                      dataset_train=train_dataset,
+                                      dataset_train=train_datasets,
                                       dataset_train_load_type='chunked',
-                                      dataset_val=val_dataset,
+                                      dataset_val=val_datasets,
                                       dataset_val_load_type='chunked',
                                       device=device,
                                       mode=MODE,

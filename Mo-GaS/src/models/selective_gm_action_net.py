@@ -62,9 +62,10 @@ class SelectiveGazeAndMotion_ActionNet(MoGaS_Gazed_ActionNet):
     self.gaze_gate_output = 0
     self.motion_gate_output = 0
 
-  def add_extra_inputs(self, x: torch.Tensor, x_g: torch.Tensor = None):
-    with torch.no_grad():
-      x_m = compute_motion(x).unsqueeze(1)
+  def add_extra_inputs(self, x: torch.Tensor, x_g: torch.Tensor = None, x_m: torch.Tensor = None):
+    if x_m is None:
+      with torch.no_grad():
+        x_m = compute_motion(x).unsqueeze(1)
 
     if self.gaze_pred_model is None:
       assert x_g is not None, "If gaze_pred_model is None, x_g must be provided"

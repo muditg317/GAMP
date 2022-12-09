@@ -102,30 +102,39 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
     """
     transforms data from the data iterator into the correct format for the model
     """
-    has_gaze = 'gazes' in self.data_types
+    # has_gaze = 'gazes' in self.data_types
+    # has_motion = 'motion' in self.data_types
     if isinstance(data, dict):
-      x = data['images'].to(device=self.device)
-      y = data['actions'].to(device=self.device)
-      if has_gaze:
-        x_g = data['gazes'].to(device=self.device)
+      data = tuple(data[type_].to(device=self.device) for type_ in self.data_types)
     elif isinstance(data, list):
-      x, y, *other = data
-      x = x.to(device=self.device)
-      y = y.to(device=self.device)
-      if has_gaze:
-        x_g = other[0].to(device=self.device)
+      data = tuple(data_.to(device=self.device) for data_ in data)
+      # x, y, *other = data
+      # x = x.to(device=self.device)
+      # y = y.to(device=self.device)
+      # if has_gaze:
+      #   x_g = other.pop(0).to(device=self.device)
+      # if has_motion:
+      #   x_m = other.pop(0).to(device=self.device)
     else:
       raise ValueError("data must be a dict or a list")
 
-    if len(x.shape) < 4:
-      x = x.unsqueeze(1)
-    if has_gaze and len(x_g.shape) < 4:
-      x_g = x_g.unsqueeze(1)
+    # if len(x.shape) < 4:
+    #   x = x.unsqueeze(1)
+    # if has_gaze and len(x_g.shape) < 4:
+    #   x_g = x_g.unsqueeze(1)
+    # if has_motion and len(x_m.shape) < 4:
+    #   x_m = x_m.unsqueeze(1)
     
-    if has_gaze:
-      return x, y, x_g
-    else:
-      return x, y
+    data = tuple(datum.unsqueeze(1) if len(datum.shape) < 4 else datum for datum in data)
+    
+    # outputs = [x, y]
+    # if has_gaze:
+    #   outputs.append(x_g)
+    # if has_motion:
+    #   outputs.append(x_m)
+    # return tuple(outputs)
+
+    return data
 
 
   def run_inputs(self, x: torch.Tensor, *other_data):

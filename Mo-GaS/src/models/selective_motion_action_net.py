@@ -56,13 +56,14 @@ class SelectiveMotion_ActionNet(MoGaS_ActionNet):
 
     self.gate_output = 0
 
-  def add_extra_inputs(self, x: torch.Tensor):
-    with torch.no_grad():
-      x_m = compute_motion(x).unsqueeze(1)
+  def add_extra_inputs(self, x: torch.Tensor, x_m: torch.Tensor = None):
+    if x_m is None:
+      with torch.no_grad():
+        x_m = compute_motion(x).unsqueeze(1)
 
-      x = x[:, -1].unsqueeze(1)
+    x = x[:, -1].unsqueeze(1)
       
-      # x_m = x * x_m ## Moved scaling to forward pass
+    # x_m = x * x_m ## Moved scaling to forward pass
     return x, x_m
 
   def forward(self, x, x_m):

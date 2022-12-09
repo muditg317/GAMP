@@ -26,3 +26,13 @@ def conv_group_output_shape(conv_layers: list[nn.Conv2d], input_shape: tuple[int
   for conv_layer in conv_layers:
     out_shape = conv_layer_output_shape(conv_layer, out_shape)
   return out_shape
+
+
+def dataset_to_list_and_str(dataset: list[str]) -> str:
+  dataset_str = dataset
+  dataset_list = dataset
+  if isinstance(dataset, list):
+    dataset_str = '__'.join([dt[:5] for dt in dataset])
+  else:
+    dataset_list = [dataset_list]
+  return dataset_list, dataset_str
