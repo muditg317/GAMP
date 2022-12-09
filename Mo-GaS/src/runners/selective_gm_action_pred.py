@@ -20,7 +20,7 @@ gaze_net_cpt: int = args.gaze_net_cpt
 MODE = 'train'
 # GAZE_TYPE = ["PRED","REAL"]
 GAZE_TYPE = "PRED"
-completed_epochs = 1
+completed_epochs = 4
 
 train_datasets = val_datasets = ['combined']
 
@@ -137,7 +137,7 @@ else:
                               lr_scheduler=lr_scheduler,
                               loss_function=loss_,
                               gaze_pred=gaze_net,
-                              LR_SCHEDULER_FREQ=6,
+                              LR_SCHEDULER_FREQ=1,
                               epochs_to_train=600,)
 
     else:
