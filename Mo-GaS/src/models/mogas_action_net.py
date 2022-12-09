@@ -30,7 +30,6 @@ class MoGaS_ActionNet(nn.Module, ABC):
                dataset_val:game_run_t                       = 'combined',
                dataset_val_load_type:dataset_load_type_t    = 'chunked',
                device                                       = torch.device('cuda'),
-              #  gaze_pred_model:MoGas_GazeNet|None           = None,
                mode:run_mode_t                              = 'train',
                opt:torch.optim.Optimizer|None               = None,
               ):
@@ -45,7 +44,6 @@ class MoGaS_ActionNet(nn.Module, ABC):
 
     self.load_model = load_model
     self.epoch = epoch
-    # self.gaze_pred_model = gaze_pred_model
     self.mode = mode
     self.opt = opt
 
@@ -65,7 +63,7 @@ class MoGaS_ActionNet(nn.Module, ABC):
         len(os.listdir(log_dir)) if os.path.exists(log_dir) else 0)))
 
     
-    if mode != 'eval':
+    if self.mode != 'eval':
       self.train_data_iter = load_data_iter(
         game=self.game,
         data_types=self.data_types,
@@ -106,7 +104,9 @@ class MoGaS_ActionNet(nn.Module, ABC):
                  opt: torch.optim.Optimizer,
                  lr_scheduler: torch.optim.lr_scheduler._LRScheduler|None,
                  loss_function: torch.nn.modules.loss._Loss,
-                 GAME_PLAY_FREQ=1):
+                 GAME_PLAY_FREQ=1,
+                 LR_SCHEDULER_FREQ=6,
+                 ):
     self.loss_ = loss_function
     self.opt = opt
 
@@ -114,9 +114,10 @@ class MoGaS_ActionNet(nn.Module, ABC):
       self.load_model_at_epoch(self.epoch, load_optimizer=True)
     else:
       self.epoch = -1
+
     eix = 0
     start_epoch = self.epoch+1
-    end_epoch = self.epoch+300
+    end_epoch = start_epoch+300
     for epoch in range(start_epoch,end_epoch):
       print(f"Training epoch {epoch}/{end_epoch}...")
       for i, data in enumerate(self.train_data_iter):
@@ -133,7 +134,15 @@ class MoGaS_ActionNet(nn.Module, ABC):
         self.writer.add_scalar('Acc', self.batch_acc(acts, y), eix)
 
         eix += 1
+
       if epoch % 1 == 0:
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': self.state_dict(),
+            'optimizer_state_dict': opt.state_dict(),
+            'loss': loss,
+          }, self.model_save_string.format(epoch))
+
         # self.writer.add_histogram("acts", y)
         # self.writer.add_histogram("preds", acts)
         print(f"Epoch {epoch} complete:")
@@ -147,15 +156,9 @@ class MoGaS_ActionNet(nn.Module, ABC):
 
         self.calc_val_metrics(epoch)
 
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': self.state_dict(),
-            'optimizer_state_dict': opt.state_dict(),
-            'loss': loss,
-          }, self.model_save_string.format(epoch))
       if epoch % GAME_PLAY_FREQ == 0:
         self.game_play(epoch)
-      if lr_scheduler is not None and epoch % 6 == 0:
+      if lr_scheduler is not None and epoch % LR_SCHEDULER_FREQ == 0:
           lr_scheduler.step()
 
   def get_data(self, data: dict[str, torch.Tensor] | list[torch.Tensor]):
