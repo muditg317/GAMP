@@ -291,11 +291,18 @@ def remove_combined_data(game):
 
 if __name__ == "__main__":
     for game in GAMES_FOR_TRAINING:
-        create_interim_files(game=game)
-        create_processed_data(stack=STACK_SIZE,
-                              game=game,
-                              till_ix=-1,
-                              stacking_skip=1,
-                              data_types=DATA_TYPES)
+        try:
+            print(f"Processing {game}")
+            processed_file = os.path.join(PROC_DATA_DIR, game + '.hdf5')
+            if not os.path.exists(processed_file):
+                create_interim_files(game=game)
+            create_processed_data(stack=STACK_SIZE,
+                                game=game,
+                                till_ix=-1,
+                                stacking_skip=1,
+                                data_types=DATA_TYPES)
+        except BlockingIOError as e:
+            print(f"BlockingIOError: {e}")
+            print(f"Skipping {game}")
         # combine_processed_data(game)
         # remove_combined_data(game)

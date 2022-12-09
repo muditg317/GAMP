@@ -14,7 +14,7 @@ args = parser.parse_args()
 game:game_t = args.game
 
 MODE:run_mode_t = 'train'
-completed_epochs = 5
+completed_epochs = 100
 
 train_datasets = val_datasets = ['combined']
 

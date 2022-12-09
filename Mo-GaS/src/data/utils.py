@@ -7,9 +7,9 @@ import torch
 
 
 def get_game_entries_(game_dir):
-    print(game_dir)
+    # print(game_dir)
     game_dir_entries = os.listdir(game_dir)
-    print(game_dir_entries)
+    # print(game_dir_entries)
     game_runs = []
     game_runs_dirs = []
     game_runs_gaze = []
