@@ -1,7 +1,7 @@
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file is just a base class for other action selection models.")
 from src.data.types import *
-from src.models.mogas_net import MoGas_Net
+from src.models.mogas_net import MoGaS_Net
 from src.features.feat_utils import image_transforms
 
 from abc import ABC, abstractmethod
@@ -10,7 +10,7 @@ import torch
 import gym
 from gym.wrappers import FrameStack, RecordVideo
 
-class MoGaS_ActionNet(MoGas_Net, ABC):
+class MoGaS_ActionNet(MoGaS_Net, ABC):
   def __init__(self, *,
                data_types:list[datatype_t]                  = list(set(DATA_TYPES) - set(['gazes'])),
                num_actions                                  = len(ACTIONS_ENUM), # 18

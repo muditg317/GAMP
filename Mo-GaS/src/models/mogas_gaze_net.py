@@ -1,12 +1,12 @@
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file is just a base class for other gaze models.")
 from src.data.types import *
-from src.models.mogas_net import MoGas_Net
+from src.models.mogas_net import MoGaS_Net
 
 from abc import ABC, abstractmethod
 import torch
 
-class MoGas_GazeNet(MoGas_Net, ABC):
+class MoGas_GazeNet(MoGaS_Net, ABC):
   def __init__(self, *,
                data_types:list[datatype_t]                  = list(set(DATA_TYPES) - set(['actions'])),
                **kwargs):
