@@ -63,7 +63,9 @@ elif game == 'demon_attack':
 
 # elif game =='ms_pacman':
 
-# elif game == 'centipede':
+elif game == 'centipede':
+  train_datasets = ['97_RZ_3586578_Aug-24-09-59-20']
+  val_datasets = ['69_RZ_2831643_Aug-15-16-16-35']
 
 # val_datasets = ['']
 device = torch.device('cuda')
@@ -77,9 +79,9 @@ completed_epochs = completed_epochs[train_dataset] if train_dataset in completed
 action_net = SelectiveMotion_ActionNet(game=game,
                                       data_types=data_types,
                                       dataset_train=train_dataset,
-                                      dataset_train_load_type='disk',
+                                      dataset_train_load_type='chunked',
                                       dataset_val=val_dataset,
-                                      dataset_val_load_type='disk',
+                                      dataset_val_load_type='chunked',
                                       device=device,
                                       mode=MODE,
                                       load_model=True,

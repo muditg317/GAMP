@@ -36,8 +36,8 @@ STACK_SIZE : 4
 BATCH_SIZE : 32
 DATA_TYPES : ['images', 'actions', 'gazes']
 GAMES_FOR_TRAINING : [
-'breakout',
-'centipede',
+# 'breakout',
+# 'centipede',
 'phoenix',
-'seaquest',
+# 'seaquest',
 ]

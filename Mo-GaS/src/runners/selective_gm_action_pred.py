@@ -22,7 +22,7 @@ MODE = 'train'
 GAZE_TYPE = "PRED"
 completed_epochs = {
   'breakout': {
-    '527_RZ_4153166_Jul-26-10-00-12': 88,
+    '527_RZ_4153166_Jul-26-10-00-12': 110,
   },
 }
 completed_epochs = completed_epochs[game] if game in completed_epochs else {}
