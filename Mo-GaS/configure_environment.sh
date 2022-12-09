@@ -143,8 +143,12 @@ else
 fi
 
 echo -e "\nInstalling other python dependencies"
-echo -e "\t++  conda install click Sphinx coverage flake8 \"python-dotenv>=0.5.1\" tqdm PyYAML numpy pandas seaborn matplotlib scipy scikit-learn h5py tensorboard gym"
-conda install click Sphinx coverage flake8 "python-dotenv>=0.5.1" tqdm PyYAML numpy pandas seaborn matplotlib scipy scikit-learn h5py tensorboard gym
+echo -e "\t++  conda install click Sphinx coverage flake8 \"python-dotenv>=0.5.1\" tqdm pyyaml numpy pandas seaborn matplotlib scipy scikit-learn h5py tensorboard"
+conda install click Sphinx coverage flake8 "python-dotenv>=0.5.1" tqdm pyyaml numpy pandas seaborn matplotlib scipy scikit-learn h5py tensorboard
+
+echo -e "\nInstalling OpenAI Gym"
+echo -e "\t++  conda install -c conda-forge gym"
+conda install -c conda-forge gym
 
 echo -e "\nInstalling OpenCV via pip (using conda causes dependency conflicts)"
 if ! command -v pip | grep -q "envs/$env_name"; then

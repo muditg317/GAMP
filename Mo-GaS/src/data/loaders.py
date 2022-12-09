@@ -166,7 +166,9 @@ def load_hdf_data(
   *,
   game:game_t,
   datasets:list[game_run_t],
-  data_types:list[datatype_t]):
+  data_types:list[datatype_t],
+  device=None,
+  hdf5_file: h5py.File=None):
   """ Loads data from the hdf game file 
   
   Args:
@@ -181,15 +183,20 @@ def load_hdf_data(
    game_data : a dcit of game_data loaded from hdf5file for the specified game runs
   
   """
-  game_file = os.path.join(PROC_DATA_DIR, game + '.hdf5')
-  game_h5_file = h5py.File(game_file, 'r')
+  if hdf5_file is None:
+    game_file = os.path.join(PROC_DATA_DIR, game + '.hdf5')
+    game_h5_file = h5py.File(game_file, 'r')
+    should_close = True
+  else:
+    game_h5_file = hdf5_file
+    should_close = False
   game_data = []
 
-  # print(datasets, game_h5_file.keys())
-  if len(datasets) == 1 and 'combined':
+  # print(datasets, list(game_h5_file.keys()))
+  if len(datasets) == 1 and 'combined' in datasets:
     datasets = list(game_h5_file.keys())
   game_data = {k: [] for k in data_types}
-  # print(datasets)
+  # print(f"Loading hdf5 data from [{game} - {datasets}]")
   actions = []
   for game_run in datasets:
     assert game_h5_file.__contains__(game_run), f"{game_run} doesn't exist in game {game}"
@@ -201,6 +208,11 @@ def load_hdf_data(
       assert game_run_data_h5.__contains__(datum), f"{datum} doesn't exist in game {game} {game_run}"
       # print(f"{datum} found in game {game} {game_run} -- {game_run_data_h5[datum].shape}")
       game_data[datum].append(game_run_data_h5[datum][:])
+      if device is not None:
+        game_data[datum][-1] = torch.Tensor(game_data[datum][-1]).to(device=device)
+    
+  if should_close:
+    game_h5_file.close()
   return game_data
 
 
@@ -334,6 +346,7 @@ class HDF5TorchChunkDataset(data.Dataset):
     if 'combined' not in self.datasets:
       groups = groups & set(self.datasets)
     groups = list(sorted(groups, reverse=True))
+    print(f"Loading chunked data for {game} with groups: {groups}")
     
     self.groups = cycle(groups)
     self.group_lens = [
@@ -346,13 +359,18 @@ class HDF5TorchChunkDataset(data.Dataset):
     self.__reset_dataset__()
 
   def __load_data__(self):
+    for dtype in list(self.curr_collation_data.keys()):
+      del self.curr_collation_data[dtype]
     self.curr_collation_data = load_hdf_data(game=self.game,
-                                             datasets=[self.curr_collation],
-                                             data_types=self.data_types)
+                                             datasets=self.curr_collation,
+                                             data_types=self.data_types,
+                                             device=self.device,
+                                             hdf5_file=self.hdf5_file)
+    print(f"Loaded hdf data for [{self.game} - {self.curr_collation}]:\n\tTypes: {self.data_types}")
 
     for dtype in self.curr_collation_data:
       datum = self.curr_collation_data[dtype]
-      datum = np.concatenate(datum, axis=0)
+      datum = torch.concatenate(datum, axis=0)
       if dtype == 'actions':
         datum = torch.LongTensor(datum).squeeze()[:, -1].to(
           device=self.device)
@@ -367,20 +385,28 @@ class HDF5TorchChunkDataset(data.Dataset):
     assert len(set(group_lens)) == 1
     self.curr_collation_len = group_lens[0]
 
+    print(f"Concated hdf data ({self.curr_collation_data.keys()})\n\tLength: {self.curr_collation_len}")
+
   def __reset_dataset__(self):
 
     self.curr_ix = 0
 
     if self.curr_collation_epoch == self.num_epochs_per_collation or self.curr_collation is None:
       self.curr_collation_epoch = 0
-      # print("Cycling dataset from {}".format(self.curr_collation))
+
+      old_collation = self.curr_collation
       self.curr_collation = [
         next(self.groups) for _ in range(self.num_groups_to_collate)
       ]
-      # print("           to {}".format(self.curr_collation))
-      self.__load_data__()
-      if 'actions' in self.curr_collation_data:
 
+      if old_collation is not None and len(set(old_collation) ^ set(self.curr_collation)) == 0:
+        print(f"Skipping loading data for {self.curr_collation} (already loaded)")
+      else:
+        print(f"Cycling chunked datasets\n\tfrom {old_collation}")
+        print(f"\tto   {self.curr_collation}")
+        self.__load_data__()
+
+      if 'actions' in self.curr_collation_data:
         labels = self.curr_collation_data['actions'].cpu().numpy(
         ).copy()
         label_to_count = Counter(labels)

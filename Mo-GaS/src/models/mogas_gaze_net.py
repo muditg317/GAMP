@@ -46,6 +46,7 @@ class MoGas_GazeNet(MoGaS_Net, ABC):
                  lr_scheduler: torch.optim.lr_scheduler._LRScheduler|None,
                  loss_function: torch.nn.modules.loss._Loss,
                  LR_SCHEDULER_FREQ=2,
+                 epochs_to_train_for=15
                  ):
     self.loss_ = loss_function
     self.opt = opt
@@ -57,7 +58,7 @@ class MoGas_GazeNet(MoGaS_Net, ABC):
 
     eix = 0
     start_epoch = self.epoch+1
-    end_epoch = start_epoch+15
+    end_epoch = start_epoch+epochs_to_train_for
     for epoch in range(start_epoch,end_epoch):
       print(f"Training epoch {epoch}/{end_epoch}...")
       for i, data in enumerate(self.train_data_iter):
@@ -88,13 +89,14 @@ class MoGas_GazeNet(MoGaS_Net, ABC):
         # self.writer.add_histogram('target', y)
         print(f"Epoch {epoch} complete:")
         print(f"\tLoss: {loss.data.item()}")
+        print(f"\tLR: {lr_scheduler.get_last_lr()[0]}")
         self.writer.add_scalar('Epoch Loss', loss.data.item(), epoch)
         if lr_scheduler is not None:
-          self.writer.add_scalar('Learning Rate', lr_scheduler.get_lr()[0], epoch)
+          self.writer.add_scalar('Learning Rate', lr_scheduler.get_last_lr()[0], epoch)
         # self.writer.add_scalar('Epoch Val Loss',
         #                        self.val_loss().data.item(), epoch)
 
-      if lr_scheduler is not None and epoch % LR_SCHEDULER_FREQ ==0 :
+      if lr_scheduler is not None and epoch % LR_SCHEDULER_FREQ == 0:
         lr_scheduler.step()
 
   def get_data(self, data: dict[str, torch.Tensor] | list[torch.Tensor]):

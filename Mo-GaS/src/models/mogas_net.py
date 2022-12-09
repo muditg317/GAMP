@@ -67,15 +67,15 @@ class MoGaS_Net(nn.Module, ABC):
         load_type=dataset_train_load_type,
       )
 
-      self.val_data_iter = load_data_iter(
-        game=self.game,
-        data_types=self.data_types,
-        datasets=[dataset_val],
-        dataset_exclude=[dataset_train],
-        device=self.device,
-        batch_size=self.batch_size,
-        load_type=dataset_val_load_type,
-      )
+      # self.val_data_iter = load_data_iter(
+      #   game=self.game,
+      #   data_types=self.data_types,
+      #   datasets=[dataset_val],
+      #   dataset_exclude=[dataset_train],
+      #   device=self.device,
+      #   batch_size=self.batch_size,
+      #   load_type=dataset_val_load_type,
+      # )
 
   @abstractmethod
   def forward(self, x: torch.Tensor, *extra_inputs) -> torch.Tensor | tuple[torch.Tensor,...]:
@@ -109,6 +109,9 @@ class MoGaS_Net(nn.Module, ABC):
     pass
 
   def load_model_at_epoch(self, epoch: int, load_optimizer=False):
+    if epoch == 0:
+      print(f"Epoch is 0, not loading {self.model_name} model from disk")
+      return
     self.epoch = epoch
     model_pickle = torch.load(self.model_save_string.format(self.epoch))
     self.load_state_dict(model_pickle['model_state_dict'])
