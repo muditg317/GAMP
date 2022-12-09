@@ -147,8 +147,10 @@ echo -e "\t++  conda install click Sphinx coverage flake8 \"python-dotenv>=0.5.1
 conda install click Sphinx coverage flake8 "python-dotenv>=0.5.1" tqdm pyyaml numpy pandas seaborn matplotlib scipy scikit-learn h5py tensorboard
 
 echo -e "\nInstalling OpenAI Gym"
-echo -e "\t++  conda install -c conda-forge gym"
-conda install -c conda-forge gym
+# echo -e "\t++  conda install -c conda-forge gym"
+# conda install -c conda-forge gym
+echo -e "\t++  pip install gym"
+pip install gym
 
 echo -e "\nInstalling OpenCV via pip (using conda causes dependency conflicts)"
 if ! command -v pip | grep -q "envs/$env_name"; then
@@ -192,8 +194,8 @@ if [ $use_jupyter -eq 1 ]; then
   fi
 
   echo -e "\nInstalling jupyter extensions"
-  echo -e "\t++  conda install -n $env_name ipykernel --update-deps --force-reinstall"
-  conda install -n $env_name ipykernel --update-deps --force-reinstall
+  echo -e "\t++  conda install -n $env_name ipykernel --update-deps"
+  conda install -n $env_name ipykernel --update-deps
   echo -e "\t++  conda install -c conda-forge ipympl"
   conda install -c conda-forge ipympl
 fi
