@@ -62,6 +62,9 @@ class SelectiveGazeAndMotion_ActionNet(MoGaS_Gazed_ActionNet):
     self.motion_gate_output = 0
 
   def add_extra_inputs(self, x: torch.Tensor, x_g: torch.Tensor = None):
+    with torch.no_grad():
+      x_m = compute_motion(x).unsqueeze(1)
+
     if self.gaze_pred_model is None:
       assert x_g is not None, "If gaze_pred_model is None, x_g must be provided"
     else:
@@ -72,9 +75,8 @@ class SelectiveGazeAndMotion_ActionNet(MoGaS_Gazed_ActionNet):
         x = x[:, -1].unsqueeze(1)
         
         # x_g = x * x_g ## Moved scaling to forward pass
-    with torch.no_grad():
-      x_m = compute_motion(x)
-    return x, x_g
+    
+    return x, x_g, x_m
 
   def forward(self, x, x_g, x_m):
     # frame forward
@@ -148,10 +150,10 @@ class SelectiveGazeAndMotion_ActionNet(MoGaS_Gazed_ActionNet):
     # self.writer.add_scalar('motion_gate_output',motion_gate_output.data.item())
     # print(motion_gate_output.data)
     # self.motion_gate_output= motion_gate_output.data.item()
-    self.motion_gate_output= motion_gate_output.data.tolist() # changed because this is a list and not a single value
+    self.motion_gate_output = motion_gate_output.data.tolist() # changed because this is a list and not a single value
 
     motion_gate_output = torch.stack([
-        vote * torch.ones(x.shape[1:]).to(device=self.device) for vote in motion_gate_output
+        vote * torch.ones(x_m.shape[1:]).to(device=self.device) for vote in motion_gate_output
     ]).to(device=self.device)
 
     x_m = x_m * motion_gate_output

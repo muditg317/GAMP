@@ -4,7 +4,7 @@ from src.data.types import *
 from src.data.loaders import load_hdf_data
 from src.models.types import run_mode_t
 from src.models.cnn_gaze_net import CNN_GazeNet
-from src.models.selective_gaze_action_net import SelectiveGaze_ActionNet
+from src.models.selective_gm_action_net import SelectiveGazeAndMotion_ActionNet
 from src.data.loaders import load_hdf_data
 import torch
 import argparse
@@ -20,7 +20,7 @@ gaze_net_cpt: int = args.gaze_net_cpt
 MODE = 'train'
 # GAZE_TYPE = ["PRED","REAL"]
 GAZE_TYPE = "PRED"
-completed_epochs = 0
+completed_epochs = 1
 
 train_datasets = val_datasets = ['combined']
 
@@ -71,18 +71,18 @@ data_types = ['images', 'actions', 'gazes']
 
 train_dataset = train_datasets[0]
 val_dataset = val_datasets[0]
-action_net = SelectiveGaze_ActionNet(game=game,
-                                     data_types=data_types,
-                                     dataset_train=train_dataset,
-                                     dataset_train_load_type='chunked',
-                                     dataset_val=val_dataset,
-                                     dataset_val_load_type='chunked',
-                                     device=device,
-                                     mode=MODE,
-                                     load_model=True,
-                                     epoch=completed_epochs,
-                                     ).to(device=device)
-optimizer = torch.optim.Adadelta(action_net.parameters(), lr=4e-1, rho=0.9)
+action_net = SelectiveGazeAndMotion_ActionNet(game=game,
+                                              data_types=data_types,
+                                              dataset_train=train_dataset,
+                                              dataset_train_load_type='chunked',
+                                              dataset_val=val_dataset,
+                                              dataset_val_load_type='chunked',
+                                              device=device,
+                                              mode=MODE,
+                                              load_model=True,
+                                              epoch=completed_epochs,
+                                              ).to(device=device)
+optimizer = torch.optim.Adadelta(action_net.parameters(), lr=5e-1, rho=0.9)
 # lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
 #     optimizer, lr_lambda=lambda x: x*0.95)
 lr_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer,lr_lambda=lambda e:0.95)
@@ -101,7 +101,7 @@ if MODE == 'eval':
                           device=device,
                           mode='eval').to(device=device)
     gaze_net.load_model_at_epoch(gaze_net_cpt)
-    
+
     curr_group_data = load_hdf_data(game=game,
                                     dataset=val_datasets,
                                     data_types=['images', 'gazes'],
@@ -137,7 +137,8 @@ else:
                               lr_scheduler=lr_scheduler,
                               loss_function=loss_,
                               gaze_pred=gaze_net,
-                              LR_SCHEDULER_FREQ=6)
+                              LR_SCHEDULER_FREQ=6,
+                              epochs_to_train=600,)
 
     else:
         action_net.train_loop(opt=optimizer,

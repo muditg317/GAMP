@@ -40,6 +40,7 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
                  loss_function: torch.nn.modules.loss._Loss,
                  GAME_PLAY_FREQ=1,
                  LR_SCHEDULER_FREQ=6,
+                 epochs_to_train=300,
                  ):
     self.loss_ = loss_function
     self.opt = opt
@@ -51,8 +52,8 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
 
     eix = 0
     start_epoch = self.epoch+1
-    end_epoch = start_epoch+300
-    for epoch in range(start_epoch,end_epoch):
+    end_epoch = start_epoch+epochs_to_train
+    for epoch in range(start_epoch,end_epoch+1):
       print(f"Training epoch {epoch}/{end_epoch}...")
       for i, data in enumerate(self.train_data_iter):
         self.opt.zero_grad()
