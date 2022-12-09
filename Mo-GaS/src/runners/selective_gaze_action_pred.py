@@ -12,7 +12,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='.')
 parser.add_argument('--game',required=True)
-parser.add_argument('--gaze_net_cpt',required=True)
+parser.add_argument('--gaze_net_cpt',required=True,type=int)
 args = parser.parse_args()
 game = args.game
 gaze_net_cpt = args.gaze_net_cpt

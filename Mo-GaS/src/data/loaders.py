@@ -109,10 +109,10 @@ def load_gaze_data(stack=1,
       images.append(img_data)
 
   images_, gazes_ = stack_data(images,
-                 gazes,
-                 stack=stack,
-                 stack_type=stack_type,
-                 stacking_skip=stacking_skip)
+                               gazes,
+                               stack=stack,
+                               stack_type=stack_type,
+                               stacking_skip=stacking_skip)
   return images_, gazes_
 
 
@@ -399,12 +399,12 @@ class HDF5TorchChunkDataset(data.Dataset):
         next(self.groups) for _ in range(self.num_groups_to_collate)
       ]
 
-      if old_collation is not None and len(set(old_collation) ^ set(self.curr_collation)) == 0:
-        print(f"Skipping loading data for {self.curr_collation} (already loaded)")
-      else:
+      if old_collation is None or len(set(old_collation) ^ set(self.curr_collation)) > 0:
         print(f"Cycling chunked datasets\n\tfrom {old_collation}")
         print(f"\tto   {self.curr_collation}")
         self.__load_data__()
+      # else:
+      #   print(f"Skipping loading data for {self.curr_collation} (already loaded)")
 
       if 'actions' in self.curr_collation_data:
         labels = self.curr_collation_data['actions'].cpu().numpy(

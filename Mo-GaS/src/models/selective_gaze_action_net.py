@@ -65,11 +65,12 @@ class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
 
         x = x[:, -1].unsqueeze(1)
         
-        x_g = x * x_g ## TODO: for whatever reason they don't apply this during training??
+        # x_g = x * x_g ## Moved scaling to forward pass
     return x, x_g
 
   def forward(self, x, x_g):
     # frame forward
+    x_g = x * x_g
 
     x = self.pool(self.relu(self.conv1(x)))
     x = self.batch_norm32_1(x)

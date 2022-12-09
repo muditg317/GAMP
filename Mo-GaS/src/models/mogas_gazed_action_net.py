@@ -12,8 +12,8 @@ class MoGaS_Gazed_ActionNet(MoGaS_ActionNet, ABC):
                data_types:list[datatype_t]                  = DATA_TYPES,
                gaze_pred_model:MoGas_GazeNet                = None,
                **kwargs):
-    self.gaze_pred_model = gaze_pred_model
     super(MoGaS_Gazed_ActionNet, self).__init__(data_types=data_types, **kwargs)
+    self.gaze_pred_model = gaze_pred_model
 
   def process_gaze(self,gaze):
     """

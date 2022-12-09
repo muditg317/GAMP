@@ -14,18 +14,18 @@ import os
 class MoGaS_Net(nn.Module, ABC):
   def __init__(self, *,
                data_types:list[datatype_t],
-               input_shape:tuple[int,int]                   = (84, 84),
-               load_model                                   = False,                   # load model from disk
-               epoch                                        = 0,           # epoch to load model from
-               batch_size                                   = BATCH_SIZE,
-               game:game_t                                  = GAMES_FOR_TRAINING[0],
-               dataset_train:game_run_t                     = 'combined', # game_run | 'combined'
-               dataset_train_load_type:dataset_load_type_t  = 'chunked', # 'chunked' | 'disk' | 'memory
-               dataset_val:game_run_t                       = 'combined',
-               dataset_val_load_type:dataset_load_type_t    = 'chunked',
-               device                                       = torch.device('cuda'),
-               mode:run_mode_t                              = 'train',
-               opt:torch.optim.Optimizer|None               = None,
+               input_shape:tuple[int,int]                         = (84, 84),
+               load_model                                         = False,       # load model from disk
+               epoch                                              = 0,           # epoch to load model from
+               batch_size                                         = BATCH_SIZE,
+               game:game_t                                        = GAMES_FOR_TRAINING[0],
+               dataset_train:game_run_t                           = 'combined',  # game_run | 'combined'
+               dataset_train_load_type:dataset_load_type_t|None   = 'chunked',   # 'chunked' | 'disk' | 'memory
+               dataset_val:game_run_t                             = 'combined',
+               dataset_val_load_type:dataset_load_type_t|None     = 'chunked',
+               device                                             = torch.device('cuda'),
+               mode:run_mode_t                                    = 'train',
+               opt:torch.optim.Optimizer|None                     = None,
               ):
     super(MoGaS_Net, self).__init__()
     self.game = game
@@ -56,27 +56,34 @@ class MoGaS_Net(nn.Module, ABC):
         len(os.listdir(log_dir)) if os.path.exists(log_dir) else 0)))
 
     if self.mode != 'eval':
-      self.train_data_iter = load_data_iter(
-        game=self.game,
-        data_types=self.data_types,
-        datasets=[dataset_train],
-        dataset_exclude=[dataset_val],
-        device=self.device,
-        batch_size=self.batch_size,
-        sampler=ImbalancedDatasetSampler,
-        load_type=dataset_train_load_type,
-      )
 
-      self.val_data_iter = None
-      # self.val_data_iter = load_data_iter(
-      #   game=self.game,
-      #   data_types=self.data_types,
-      #   datasets=[dataset_val],
-      #   dataset_exclude=[dataset_train],
-      #   device=self.device,
-      #   batch_size=self.batch_size,
-      #   load_type=dataset_val_load_type,
-      # )
+      if dataset_train_load_type is None:
+        self.train_data_iter = None
+      else:
+        self.train_data_iter = load_data_iter(
+          game=self.game,
+          data_types=self.data_types,
+          datasets=[dataset_train],
+          dataset_exclude=[dataset_val],
+          device=self.device,
+          batch_size=self.batch_size,
+          sampler=ImbalancedDatasetSampler,
+          load_type=dataset_train_load_type,
+        )
+
+      if dataset_val_load_type is None:
+        self.val_data_iter = None
+      else:
+        self.val_data_iter = None
+        # self.val_data_iter = load_data_iter(
+        #   game=self.game,
+        #   data_types=self.data_types,
+        #   datasets=[dataset_val],
+        #   dataset_exclude=[dataset_train],
+        #   device=self.device,
+        #   batch_size=self.batch_size,
+        #   load_type=dataset_val_load_type,
+        # )
 
   @abstractmethod
   def forward(self, x: torch.Tensor, *extra_inputs) -> torch.Tensor | tuple[torch.Tensor,...]:

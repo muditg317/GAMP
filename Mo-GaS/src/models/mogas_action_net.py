@@ -5,10 +5,11 @@ from src.models.mogas_net import MoGaS_Net
 from src.features.feat_utils import image_transforms
 
 from abc import ABC, abstractmethod
+import random
 import torch
 
 import gym
-from gym.wrappers import FrameStack, RecordVideo
+from gym.wrappers import FrameStack
 
 class MoGaS_ActionNet(MoGaS_Net, ABC):
   def __init__(self, *,
@@ -57,7 +58,7 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
         self.opt.zero_grad()
 
         x, y, *other_data = self.get_data(data)
-        extra_inputs, acts, extra_outputs = self.run_inputs(x, *other_data)
+        x, extra_inputs, acts, extra_outputs = self.run_inputs(x, *other_data)
 
         loss = self.loss_fn(self.loss_, acts, y, *extra_inputs, *extra_outputs)
         loss.backward()
@@ -149,13 +150,13 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
     if isinstance(acts, tuple):
       acts, *extra_outputs = acts
     
-    return extra_inputs, acts, extra_outputs
+    return x, extra_inputs, acts, extra_outputs
 
   def infer(self, x_var: torch.Tensor) -> torch.Tensor:
     with torch.no_grad():
       self.eval()
 
-      _, acts, _ = self.run_inputs(x_var)
+      _, _, acts, _ = self.run_inputs(x_var)
       result = self.process_activations_for_inference(acts)
 
       self.train()
@@ -185,7 +186,7 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
       for i, data in enumerate(self.val_data_iter):
         x, y, *other_data = self.get_data(data)
         other_data = [] # don't allow other data for validation
-        extra_inputs, acts, extra_outputs = self.run_inputs(x, *other_data)
+        _, extra_inputs, acts, extra_outputs = self.run_inputs(x, *other_data)
 
         loss_val = self.loss_fn(self.loss_, acts, y, *extra_inputs, *extra_outputs)
         loss += loss_val.data.item()
@@ -205,7 +206,7 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
     with torch.no_grad():
       for i, data in enumerate(self.train_data_iter):
         x, y, *other_data = self.get_data(data)
-        _, acts, _ = self.run_inputs(x, *other_data)
+        _, _, acts, _ = self.run_inputs(x, *other_data)
         acts = acts.argmax(dim=1)
         acc += (acts == y).sum().data.item()
         ix += y.shape[0]
@@ -225,23 +226,25 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
     t_rew = 0
 
     for i_episode in range(episodes):
-      observation = env.reset()
+      observation,info = env.reset()
       ep_rew = 0
       t = 0
       while True:
         t += 1
         observation = torch.stack(
-          [transform_images(o).squeeze() for o in observation]).unsqueeze(0).to(device=self.device)
+          [transform_images(o.__array__()).squeeze() for o in observation]).unsqueeze(0).to(device=self.device)
         action = self.infer(observation).data.item()
-        observation, reward, done, info = env.step(action)
+        if self.game == 'breakout' and random.random() < 0.1:
+          action = ACTIONS_ENUM['PLAYER_A_FIRE']
+        observation, reward, done, tr, info = env.step(action)
 
         ep_rew += reward
-        if done:
+        if done or tr:
           # print("Episode finished after {} timesteps".format(t + 1))
           break
       t_rew += ep_rew
-      print(f"Episode {i_episode} finished...")
-      print(f"\tLength: {t} timesteps")
-      print(f"\tReward {ep_rew}")
-      print(f"\tAvg reward {t_rew/(i_episode+1)}")
+      print(f"\tEpisode {i_episode} finished...")
+      print(f"\t\tLength: {t} timesteps")
+      print(f"\t\tReward {ep_rew}")
+      print(f"\t\tAvg reward {t_rew/(i_episode+1)}")
     self.writer.add_scalar("Game Reward", t_rew/(i_episode+1),epoch)
