@@ -231,17 +231,27 @@ def motion_pdf(image1, image2): # takes tensors
     motion_pts = torch.multiply(motion_pts, dim_scale).int().cuda()
     motion_pts = torch.clip(motion_pts, 0, MOTION_PDF_out_dim[0]-1).long().cuda()
 
+    # pdfs_true = [np.zeros(MOTION_PDF_out_dim)]
+    # for motion_pt in motion_pts:
+    #     rv = multivariate_normal(mean=motion_pt,
+    #                             cov=[[2.85 * 2.85, 0], [0, 2.92 * 2.92]])
+    #     pdfs_true.append(rv.pdf(MOTION_PDF_pos))
+    # pdf = np.sum(pdfs_true, axis=0)
+
+    # motion_map = make_heatmap(torch.tensor(pdf).cuda())
+    
     motion_map = torch.zeros(MOTION_PDF_out_dim).cuda()
     motion_map[motion_pts[:,0], motion_pts[:,1]] = 1
+
+    motion_map = transforms.functional.gaussian_blur(motion_map.unsqueeze(0), 7).squeeze(0)
 
     return motion_map
 
 def reduce_image_stack_to_motion(image_stack):
-    image_stack = [torch.from_numpy(image).cuda() for image in image_stack]
-    motion_pdfs = torch.stack([motion_pdf(im1, im2) for im1,im2 in zip(image_stack[:-1], image_stack[1:])])
+    # image_stack = [image[:,:].cuda() for image in image_stack]
+    motion_pdfs = torch.stack([motion_pdf(im1, im2)*np.exp(i) for i,(im1,im2) in enumerate(zip(image_stack[:-1], image_stack[1:]))])
     pdf = torch.max(motion_pdfs, axis=0).values
     wpdf = make_heatmap(pdf)
-
     return torch.Tensor(wpdf)
 
 def compute_motion(images_):

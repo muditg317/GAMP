@@ -1,19 +1,20 @@
 from src.utils.config import *
-ASSERT_NOT_RUN(__name__, __file__, "This file defines a selective-gaze-usage action selection network for Atari gameplay, it should simply be imported elsewhere.")
+ASSERT_NOT_RUN(__name__, __file__, "This file defines a selective-motion-usage action selection network for Atari gameplay, it should simply be imported elsewhere.")
 
-from src.models.mogas_gazed_action_net import MoGaS_Gazed_ActionNet
+from src.models.mogas_action_net import MoGaS_ActionNet
 from src.models.utils import conv_group_output_shape, NOOP_POOL_PARAMS
+from src.features.feat_utils import compute_motion
 
 import torch
 import numpy as np
 import torch.nn as nn
 
 
-class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
+class SelectiveMotion_ActionNet(MoGaS_ActionNet):
   def __init__(self, **kwargs):
-    super(SelectiveGaze_ActionNet, self).__init__(**kwargs)
+    super(SelectiveMotion_ActionNet, self).__init__(**kwargs)
 
-    self.gaze_gate = nn.GRU(3136, 1, 1, batch_first=True)
+    self.motion_gate = nn.GRU(3136, 1, 1, batch_first=True)
 
     self.conv1 = nn.Conv2d(1, 32, 8, stride=(4, 4))
     self.pool = nn.MaxPool2d(**NOOP_POOL_PARAMS)
@@ -54,22 +55,18 @@ class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
 
     self.gate_output = 0
 
-  def add_extra_inputs(self, x: torch.Tensor, x_g: torch.Tensor = None):
-    if self.gaze_pred_model is None:
-      assert x_g is not None, "If gaze_pred_model is None, x_g must be provided"
-    else:
-      with torch.no_grad():
-        x_g = self.gaze_pred_model.infer(x)
-        x_g = self.process_gaze(x_g).unsqueeze(1)
+  def add_extra_inputs(self, x: torch.Tensor):
+    with torch.no_grad():
+      x_m = compute_motion(x).unsqueeze(1)
 
-        x = x[:, -1].unsqueeze(1)
-        
-        # x_g = x * x_g ## Moved scaling to forward pass
-    return x, x_g
+      x = x[:, -1].unsqueeze(1)
+      
+      # x_m = x * x_m ## Moved scaling to forward pass
+    return x, x_m
 
-  def forward(self, x, x_g):
+  def forward(self, x, x_m):
     # frame forward
-    x_g = x * x_g
+    x_m = x * x_m
 
     x = self.pool(self.relu(self.conv1(x)))
     x = self.batch_norm32_1(x)
@@ -84,8 +81,8 @@ class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
     # x = self.dropout(x)
 
     # x_cgl = self.softmax_cgl(self.conv4_cgl(x))
-    # gaze_overlay forward
-    # x_g = self.W * x_g
+    # motion_overlay forward
+    # x_m = self.W * x_m
 
 
     embed = torch.flatten(x, start_dim=1).unsqueeze(1).detach()
@@ -93,7 +90,7 @@ class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
     h = (torch.ones(1, x.shape[0], 1) * -1).to(device=self.device)
     h.requires_grad = False
 
-    out, h = self.gaze_gate(embed, h)
+    out, h = self.motion_gate(embed, h)
 
     out = out.flatten()
     gate_output = torch.relu(torch.sign(out))
@@ -104,28 +101,28 @@ class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
     self.gate_output= gate_output.data.tolist() # changed because this is a list and not a single value
 
     gate_output = torch.stack([
-        vote * torch.ones(x_g.shape[1:]).to(device=self.device) for vote in gate_output
+        vote * torch.ones(x_m.shape[1:]).to(device=self.device) for vote in gate_output
     ]).to(device=self.device)
 
-    x_g = x_g * gate_output
+    x_m = x_m * gate_output
 
-    x_g = self.pool2(self.relu2(self.conv21(x_g)))
-    x_g = self.batch_norm32_2(x_g)
-    # x_g = self.dropout(x_g)
+    x_m = self.pool2(self.relu2(self.conv21(x_m)))
+    x_m = self.batch_norm32_2(x_m)
+    # x_m = self.dropout(x_m)
 
-    x_g = self.pool2(self.relu2(self.conv22(x_g)))
-    x_g = self.batch_norm64_3(x_g)
-    # x_g = self.dropout(x_g)
+    x_m = self.pool2(self.relu2(self.conv22(x_m)))
+    x_m = self.batch_norm64_3(x_m)
+    # x_m = self.dropout(x_m)
 
-    x_g = self.pool2(self.relu2(self.conv23(x_g)))
-    x_g = self.batch_norm64_4(x_g)
-    # x_g = self.dropout(x_g)
+    x_m = self.pool2(self.relu2(self.conv23(x_m)))
+    x_m = self.batch_norm64_4(x_m)
+    # x_m = self.dropout(x_m)
 
-    # combine gaze conv + frame conv
-    # x = (x + x_g)
+    # combine motion conv + frame conv
+    # x = (x + x_m)
 
 
-    x = torch.cat([x, x_g], dim=1)
+    x = torch.cat([x, x_m], dim=1)
     # x = x.view(-1, 64 * torch.prod(self.lin_in_shape))
     x = x.flatten(start_dim=1)
     x = self.linear1(x)
@@ -133,8 +130,8 @@ class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
     x = self.linear3(x)
     return x
 
-  def loss_fn(self, loss_, acts, targets, x_g=None):
-    return super(SelectiveGaze_ActionNet, self).loss_fn(loss_, acts, targets)
+  def loss_fn(self, loss_, acts, targets, x_m=None):
+    return super().loss_fn(loss_, acts, targets)
 
   def process_activations_for_inference(self, acts):
     acts = super().process_activations_for_inference(acts)
