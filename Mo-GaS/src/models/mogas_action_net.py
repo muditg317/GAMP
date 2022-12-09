@@ -7,8 +7,8 @@ from src.features.feat_utils import image_transforms
 from abc import ABC, abstractmethod
 import torch
 
-# import gym
-# from gym.wrappers import FrameStack, RecordVideo
+import gym
+from gym.wrappers import FrameStack, RecordVideo
 
 class MoGaS_ActionNet(MoGas_Net, ABC):
   def __init__(self, *,
