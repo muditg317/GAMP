@@ -4,6 +4,13 @@ ASSERT_NOT_RUN(__name__, __file__)
 from math import floor
 import torch.nn as nn
 
+NOOP_POOL_PARAMS = {
+  'kernel_size': (1, 1),
+  'stride': (1, 1),
+  'padding': (0, 0),
+  'dilation': (1, 1),
+}
+
 def conv_layer_output_shape(conv_layer: nn.Conv2d, input_shape: tuple[int,int]):
   h_in, w_in = input_shape
   h_out, w_out = floor((

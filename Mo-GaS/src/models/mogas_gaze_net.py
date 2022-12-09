@@ -5,21 +5,9 @@ from src.models.mogas_net import MoGas_Net
 
 from abc import ABC, abstractmethod
 import torch
-import numpy as np
-import torch.nn as nn
-import torch.nn.functional as F
-from math import floor
-from torch.utils.tensorboard import SummaryWriter
-from yaml import safe_load
-import os
-from src.data.utils import ImbalancedDatasetSampler
-from src.data.loaders import HDF5TorchDataset, load_data_iter
 
-np.random.seed(42)
-
-
-class MoGas_GazeNet(nn.Module, ABC):
-  def __init__(self,
+class MoGas_GazeNet(MoGas_Net, ABC):
+  def __init__(self, *,
                data_types:list[datatype_t]                  = list(set(DATA_TYPES) - set(['actions'])),
                **kwargs):
     super(MoGas_GazeNet, self).__init__(data_types=data_types, **kwargs)

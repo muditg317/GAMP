@@ -1,23 +1,19 @@
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file defines a CNN-based gaze predictor for Atari gameplay, it should simply be imported elsewhere.")
 from src.models.mogas_gaze_net import MoGas_GazeNet
+from src.models.utils import NOOP_POOL_PARAMS
 
 import torch
-import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
-# np.random.seed(42)
 
 class CNN_GazeNet(MoGas_GazeNet):
-  def __init__(self,
-               **kwargs
-              ):
-
+  def __init__(self, **kwargs):
     super(CNN_GazeNet, self).__init__(**kwargs)
 
     self.conv1 = nn.Conv2d(4, 32, 8, stride=(4, 4))
-    self.pool = nn.MaxPool2d((1, 1), (1, 1), (0, 0), (1, 1))
+    self.pool = nn.MaxPool2d(**NOOP_POOL_PARAMS)
     # self.pool = lambda x: x
 
     self.conv2 = nn.Conv2d(32, 64, 4, stride=(2, 2))

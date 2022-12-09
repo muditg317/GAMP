@@ -1,8 +1,7 @@
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file defines a basic action selection network for Atari gameplay, it should simply be imported elsewhere.")
-
 from src.models.mogas_action_net import MoGaS_ActionNet
-from src.models.utils import conv_group_output_shape
+from src.models.utils import conv_group_output_shape, NOOP_POOL_PARAMS
 
 import torch
 import numpy as np
@@ -10,26 +9,18 @@ import torch.nn as nn
 
 
 class Basic_ActionNet(MoGaS_ActionNet):
-  def __init__(self,
-               **kwargs):
+  def __init__(self, **kwargs):
     super(Basic_ActionNet, self).__init__(**kwargs)
 
-    noop_pool_params = {
-      'kernel_size': (1, 1),
-      'stride': (1, 1),
-      'padding': (0, 0),
-      'dilation': (1, 1),
-    }
-
     self.conv1 = nn.Conv2d(4, 32, 8, stride=(4, 4))
-    self.pool = nn.MaxPool2d(**noop_pool_params)
+    self.pool = nn.MaxPool2d(**NOOP_POOL_PARAMS)
     # self.pool = lambda x: x
 
     self.conv2 = nn.Conv2d(32, 64, 4, stride=(2, 2))
     self.conv3 = nn.Conv2d(64, 64, 3, stride=(1, 1))
 
     self.conv21 = nn.Conv2d(4, 32, 8, stride=(4, 4))
-    self.pool2 = nn.MaxPool2d(**noop_pool_params)
+    self.pool2 = nn.MaxPool2d(**NOOP_POOL_PARAMS)
     # self.pool = lambda x: x
 
     self.conv22 = nn.Conv2d(32, 64, 4, stride=(2, 2))
@@ -57,7 +48,7 @@ class Basic_ActionNet(MoGaS_ActionNet):
   def add_extra_inputs(self, x: torch.Tensor, *other_data):
     return super(Basic_ActionNet, self).add_extra_inputs(x, *other_data)
 
-  def forward(self, x):
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
     x = self.pool(self.relu(self.conv1(x)))
     x = self.batch_norm32_1(x)
     x = self.dropout(x)

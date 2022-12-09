@@ -1,5 +1,7 @@
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file is just a base class for all types of MoGaS networks.")
+from src.data.utils import ImbalancedDatasetSampler
+from src.data.loaders import load_data_iter
 from src.data.types import *
 from src.models.types import *
 
@@ -8,16 +10,12 @@ import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 import os
-from src.data.utils import ImbalancedDatasetSampler
-from src.data.loaders import load_data_iter
-from src.features.feat_utils import image_transforms
-# np.random.seed(42)
+
 # import gym
 # from gym.wrappers import FrameStack, RecordVideo
 
 class MoGaS_Net(nn.Module, ABC):
-  def __init__(self,
-               *,
+  def __init__(self, *,
                data_types:list[datatype_t],
                input_shape:tuple[int,int]                   = (84, 84),
                load_model                                   = False,                   # load model from disk

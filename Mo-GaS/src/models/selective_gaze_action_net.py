@@ -1,8 +1,8 @@
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file defines a selective-gaze-usage action selection network for Atari gameplay, it should simply be imported elsewhere.")
 
-from src.models.mogas_gazed_action_net import MoGaS_Gazed_ActionNet, NOOP_POOL_PARAMS
-from src.models.utils import conv_group_output_shape
+from src.models.mogas_gazed_action_net import MoGaS_Gazed_ActionNet
+from src.models.utils import conv_group_output_shape, NOOP_POOL_PARAMS
 
 import torch
 import numpy as np
@@ -10,8 +10,7 @@ import torch.nn as nn
 
 
 class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
-  def __init__(self,
-               **kwargs):
+  def __init__(self, **kwargs):
     super(SelectiveGaze_ActionNet, self).__init__(**kwargs)
 
     self.gaze_gate = nn.GRU(3136, 1, 1, batch_first=True)

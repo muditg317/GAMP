@@ -1,29 +1,19 @@
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file defines a generic gaze-based action selection network for Atari gameplay, it should simply be imported elsewhere.")
-
+from src.data.types import datatype_t
 from src.models.mogas_action_net import MoGaS_ActionNet
 from src.models.mogas_gaze_net import MoGas_GazeNet
-from src.models.utils import conv_group_output_shape
 
 from abc import ABC, abstractmethod
 import torch
-import numpy as np
-import torch.nn as nn
-
-NOOP_POOL_PARAMS = {
-  'kernel_size': (1, 1),
-  'stride': (1, 1),
-  'padding': (0, 0),
-  'dilation': (1, 1),
-}
 
 class MoGaS_Gazed_ActionNet(MoGaS_ActionNet, ABC):
-  def __init__(self,
-               *,
-               gaze_pred_model:MoGas_GazeNet=None,
+  def __init__(self, *,
+               data_types:list[datatype_t]                  = DATA_TYPES,
+               gaze_pred_model:MoGas_GazeNet                = None,
                **kwargs):
     self.gaze_pred_model = gaze_pred_model
-    super(MoGaS_Gazed_ActionNet, self).__init__(**kwargs)
+    super(MoGaS_Gazed_ActionNet, self).__init__(data_types=data_types, **kwargs)
 
   def process_gaze(self,gaze):
     """
