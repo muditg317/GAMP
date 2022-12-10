@@ -1,4 +1,4 @@
-
+from __future__ import annotations
 from src.utils.strict_run import *
 import os
 import sys

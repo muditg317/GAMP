@@ -1,3 +1,4 @@
+from __future__ import annotations
 from src.utils.config import *
 import os
 from subprocess import call

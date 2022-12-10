@@ -79,6 +79,40 @@ elif game == 'centipede':
     env_name = 'Centipede-v0'
 
 # dataset_val = ['']
+dataset_train=['143_JAW_3272885_Dec-14-11-35-58',
+ '144_JAW_3273946_Dec-14-11-54-16',
+ '150_KM_3357098_Dec-15-10-59-11',
+ '152_KM_3359364_Dec-15-11-36-50',
+ '204_RZ_4136256_Dec-06-16-48-50',
+ '206_RZ_4478127_Dec-10-15-44-57',
+ '210_RZ_6966080_Jan-08-10-58-48',
+ '244_RZ_594187_Feb-19-10-37-42',
+#  '245_RZ_719798_Feb-20-21-31-06',
+#  '254_RZ_1239817_Feb-26-21-57-37',
+#  '259_RZ_1454534_Mar-01-09-36-16',
+ '286_RZ_5620664_Apr-18-15-56-48',
+ '450_RZ_3221959_Jul-15-15-19-59']#,
+dataset_val = ['481_RZ_3471184_Jul-18-12-35-05',
+ '501_RZ_3566169_Jul-19-14-57-05',
+ '53_RZ_2398139_Aug-10-15-50-15',
+ '60_RZ_2724114_Aug-14-10-26-09',
+#  '610_RZ_5290268_Aug-08-13-51-47',
+#  '612_RZ_5293382_Aug-08-14-44-08',
+#  '615_RZ_5298584_Aug-08-16-10-26',
+#  '620_RZ_5632787_Aug-12-13-03-16',
+ '69_RZ_2831643_Aug-15-16-16-35',
+ '78_RZ_3068875_Aug-18-10-10-05',
+ '80_RZ_3084132_Aug-18-14-23-21',
+ '88_RZ_3437559_Aug-22-16-33-34',
+ '94_RZ_3508931_Aug-23-12-23-06',
+ '97_RZ_3586578_Aug-24-09-59-20']
+ #'245_RZ_719798_Feb-20-21-31-06',
+ #'254_RZ_1239817_Feb-26-21-57-37',
+ #'259_RZ_1454534_Mar-01-09-36-16',
+#  '610_RZ_5290268_Aug-08-13-51-47',
+#  '612_RZ_5293382_Aug-08-14-44-08',
+#  '615_RZ_5298584_Aug-08-16-10-26',
+#  '620_RZ_5632787_Aug-12-13-03-16']
 device = torch.device('cuda')
 
 data_types = ['images', 'actions', 'gazes']
@@ -91,7 +125,7 @@ action_net = SGAZED_ACTION_SL(game=game,
                               dataset_val_load_type='chunked',
                               device=device,env_name = env_name,
                               mode=MODE,load_model=False,
-                              epoch=29).to(device=device)
+                              epoch=33).to(device=device)
 optimizer = torch.optim.Adadelta(action_net.parameters(), lr=5e-1, rho=0.9)
 # lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
 #     optimizer, lr_lambda=lambda x: x*0.95)

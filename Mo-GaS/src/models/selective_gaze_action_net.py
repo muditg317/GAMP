@@ -1,8 +1,10 @@
+from __future__ import annotations
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file defines a selective-gaze-usage action selection network for Atari gameplay, it should simply be imported elsewhere.")
 
 from src.models.mogas_gazed_action_net import MoGaS_Gazed_ActionNet
 from src.models.utils import conv_group_output_shape, NOOP_POOL_PARAMS
+from src.features.feat_utils import compute_motion
 
 import torch
 import numpy as np
@@ -59,8 +61,11 @@ class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
       assert x_g is not None, "If gaze_pred_model is None, x_g must be provided"
     else:
       with torch.no_grad():
-        x_g = self.gaze_pred_model.infer(x)
-        x_g = self.process_gaze(x_g).unsqueeze(1)
+        # print(list(self.gaze_pred_model.modules()))
+        # x_g = self.gaze_pred_model.infer(x)
+        # x_g = self.process_gaze(x_g).unsqueeze(1)
+
+        x_g = compute_motion(x).unsqueeze(1)
 
         x = x[:, -1].unsqueeze(1)
         
@@ -70,6 +75,7 @@ class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
   def forward(self, x, x_g):
     # frame forward
     x_g = x * x_g
+    # print(f"Using gazes: {torch.mean(x_g)}")
 
     x = self.pool(self.relu(self.conv1(x)))
     x = self.batch_norm32_1(x)

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file is just a base class for other gaze models.")
 from src.data.types import *
@@ -89,15 +90,15 @@ class MoGas_GazeNet(MoGaS_Net, ABC):
         # self.writer.add_histogram('target', y)
         print(f"Epoch {epoch} complete:")
         print(f"\tLoss: {loss.data.item()}")
-        print(f"\tLR: {lr_scheduler.get_last_lr()[0]}")
+        # print(f"\tLR: {lr_scheduler._last_lr[0]}")
         self.writer.add_scalar('Epoch Loss', loss.data.item(), epoch)
-        if lr_scheduler is not None:
-          self.writer.add_scalar('Learning Rate', lr_scheduler.get_last_lr()[0], epoch)
+        # if lr_scheduler is not None:
+        #   self.writer.add_scalar('Learning Rate', lr_scheduler._last_lr[0], epoch)
         # self.writer.add_scalar('Epoch Val Loss',
         #                        self.val_loss().data.item(), epoch)
 
-      if lr_scheduler is not None and epoch % LR_SCHEDULER_FREQ == 0:
-        lr_scheduler.step()
+      if lr_scheduler is not None:# and epoch % LR_SCHEDULER_FREQ == 0:
+        lr_scheduler.step(loss)
 
   def get_data(self, data: dict[str, torch.Tensor] | list[torch.Tensor]):
     if isinstance(data, dict):

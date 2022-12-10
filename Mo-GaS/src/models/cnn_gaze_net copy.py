@@ -14,15 +14,14 @@ class CNN_GazeNet(MoGas_GazeNet):
     super(CNN_GazeNet, self).__init__(**kwargs)
 
     self.conv1 = nn.Conv2d(4, 32, 8, stride=(4, 4))
+    self.pool = nn.MaxPool2d(**NOOP_POOL_PARAMS)
+    # self.pool = lambda x: x
+
     self.conv2 = nn.Conv2d(32, 64, 4, stride=(2, 2))
     self.conv3 = nn.Conv2d(64, 64, 3, stride=(1, 1))
-    self.pool = nn.MaxPool2d(**NOOP_POOL_PARAMS)
-    self.deconv1 = nn.Conv2d(64, 64, 3, stride=(1, 1),padding = 1)
-    self.deconv2 = nn.Conv2d(64, 32, 5, stride=(1, 1),padding = 2)
-    self.deconv3 = nn.Conv2d(32, 1, 5, stride=(1, 1),padding = 2)
-    self.upsample1 = nn.Upsample(scale_factor=2, mode='bilinear')
-    self.upsample2 = nn.Upsample(scale_factor=2, mode='bilinear')
-    self.upsample3 = nn.Upsample(scale_factor=3, mode='bilinear')
+    self.deconv1 = nn.ConvTranspose2d(64, 64, 3, stride=(1, 1))
+    self.deconv2 = nn.ConvTranspose2d(64, 32, 4, stride=(2, 2))
+    self.deconv3 = nn.ConvTranspose2d(32, 1, 8, stride=(4, 4))
 
   def forward(self, x: torch.Tensor) -> torch.Tensor:
     x = self.pool(F.relu(self.conv1(x)))
@@ -31,11 +30,11 @@ class CNN_GazeNet(MoGas_GazeNet):
 
     x = self.pool(F.relu(self.conv3(x)))
 
-    x = F.relu(self.deconv1(self.upsample1(x)))
+    x = self.pool(F.relu(self.deconv1(x)))
 
-    x = F.relu(self.deconv2(self.upsample2(x)))
+    x = self.pool(F.relu(self.deconv2(x)))
 
-    x = self.deconv3(self.upsample3(x))
+    x = self.deconv3(x)
 
     x = x.squeeze(1)
 

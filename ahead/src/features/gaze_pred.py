@@ -22,12 +22,12 @@ game = args.game
 with open('src/config.yaml', 'r') as f:
     config_data = safe_load(f.read())
 
-MODE = 'eval'
+MODE = 'train'
 BATCH_SIZE = config_data['BATCH_SIZE']
 
 dataset_train = dataset_val = 'combined'  #game_run
 
-dataset_val = ['564_RZ_4602455_Jul-31-14-48-16']
+# dataset_val = ['564_RZ_4602455_Jul-31-14-48-16']
 
 device = torch.device('cuda')
 

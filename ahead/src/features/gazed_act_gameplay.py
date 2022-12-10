@@ -122,7 +122,7 @@ optimizer = torch.optim.Adadelta(action_net.parameters(), lr=1.0, rho=0.95)
 #     optimizer, lr_lambda=lambda x: x*0.95)
 lr_scheduler = None
 loss_ = torch.nn.CrossEntropyLoss().to(device=device)
-env = gym.make(env_name, full_action_space=False,frameskip=1, render_mode = 'human')
+env = gym.make(env_name, full_action_space=False,frameskip=1)#, render_mode = 'human')
 
 env = FrameStack(env, 4)
 # env = RecordVideo(env,env_name)
@@ -181,7 +181,7 @@ for i_episode in range(start_episode,end_episode,1):
         obs = cv2.resize(obs[-1],(160,210))
 
         obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
-        gaze_ = cv2.addWeighted(gaze_,0.25,obs,0.5,0)*2
+        
 
         gaze_true = (gaze_true - np.min(gaze_true)) / (np.max(gaze_true) - np.min(gaze_true))
 
@@ -192,6 +192,9 @@ for i_episode in range(start_episode,end_episode,1):
         gaze = gaze * observation
         action = action_net.infer(observation,gaze).data.item()
         
+        gaze_ = cv2.addWeighted(gaze_,0.25*(action_net.gate_output[0]),obs,0.5,0)*2
+        cv2.imshow("gaze_pred_normalized",gaze_)
+        cv2.waitKey(16)
         
         observation, reward, done, trun, info = env.step(action)
 

@@ -41,7 +41,7 @@ class SGAZED_ACTION_SL(nn.Module):
             self.config_yml = safe_load(f.read())
 
         model_save_dir = os.path.join(self.config_yml['MODEL_SAVE_DIR'], game,
-                                      dataset_train)
+                                      dataset_train[0])
         if not os.path.exists(model_save_dir):
             os.makedirs(model_save_dir)
 
@@ -49,7 +49,7 @@ class SGAZED_ACTION_SL(nn.Module):
             model_save_dir, self.__class__.__name__ + '_Epoch_{}.pt')
         log_dir = os.path.join(
             self.config_yml['RUNS_DIR'], game,
-            '{}_{}'.format(dataset_train, self.__class__.__name__))
+            '{}_{}'.format(dataset_train[0], self.__class__.__name__))
         self.writer = SummaryWriter(log_dir=os.path.join(
             log_dir, "run_{}".format(
                 len(os.listdir(log_dir)) if os.path.exists(log_dir) else 0)))
@@ -273,9 +273,9 @@ class SGAZED_ACTION_SL(nn.Module):
                         x_g = self.gaze_pred_model.infer(x)
                         x_g = self.process_gaze(x_g).unsqueeze(1)
                         # x_g = x_g.unsqueeze(1).repeat(1, x.shape[1], 1, 1)
-
-                        x = x[:, -1].unsqueeze(1)
                         
+                        x = x[:, -1].unsqueeze(1)
+                        x_g = x * x_g
 
                 self.opt.zero_grad()
 

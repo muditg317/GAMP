@@ -1,3 +1,4 @@
+from __future__ import annotations
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file defines a generic gaze-based action selection network for Atari gameplay, it should simply be imported elsewhere.")
 from src.data.types import datatype_t

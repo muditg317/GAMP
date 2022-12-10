@@ -2,6 +2,9 @@
 *.egg-info
 
 /data/
+/data/interim/
+/data/processed/
+/data/raw/
 models_
 /runs/
 

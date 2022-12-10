@@ -1,3 +1,4 @@
+from __future__ import annotations
 from src.utils.config import *
 ASSERT_BEING_RUN(__name__, __file__, "This file should not be imported. It runs src/models/selective_gaze_action_net.py and visualizes the results")
 from src.data.types import *
@@ -38,7 +39,16 @@ episode = args.episode
 device = torch.device('cuda')
 
 data_types = ['images', 'actions', 'gazes'] # unused
-dataset_train:game_run_t = '527_RZ_4153166_Jul-26-10-00-12'     # unused
+dataset_train:game_run_t = ['143_JAW_3272885_Dec-14-11-35-58',
+ '144_JAW_3273946_Dec-14-11-54-16',
+ '150_KM_3357098_Dec-15-10-59-11',
+ '152_KM_3359364_Dec-15-11-36-50',
+ '204_RZ_4136256_Dec-06-16-48-50',
+ '206_RZ_4478127_Dec-10-15-44-57',
+ '210_RZ_6966080_Jan-08-10-58-48',
+ '244_RZ_594187_Feb-19-10-37-42',
+ '286_RZ_5620664_Apr-18-15-56-48',
+ '450_RZ_3221959_Jul-15-15-19-59']     # unused
 dataset_val:game_run_t   = '527_RZ_4153166_Jul-26-10-00-12'     # unused
 
 gaze_net = CNN_GazeNet(game=game,
@@ -60,10 +70,13 @@ action_net = SelectiveGaze_ActionNet(game=game,
                                      dataset_val_load_type=None,
                                      device=device,
                                      mode=EVAL_MODE,
-                                     gaze_pred_model=gaze_net).to(device=device)
+                                    #  gaze_pred_model=gaze_net
+                                     ).to(device=device)
 action_net.load_model_at_epoch(action_cpt)
 action_net.eval()
-
+action_net.gaze_pred_model = gaze_net
+action_net.gaze_pred_model.load_model_at_epoch(gaze_net_cpt)
+action_net.gaze_pred_model.eval()
 
 env = gym.make(GYM_ENV_MAP[game], full_action_space=True, frameskip=1)
 env = FrameStack(env, 4)
@@ -123,6 +136,8 @@ for i_episode in range(start_episode,end_episode,1):
     gaze_true = cv2.applyColorMap(gaze_true,cv2.COLORMAP_TURBO)
     
     gaze_ = cv2.addWeighted(gaze_true,0.25,obs,0.5,0)*2
+
+    gaze_ = cv2.resize(gaze_,(480,630))
     cv2.imshow("gaze_pred_normalized",gaze_)
     cv2.waitKey(1)
     

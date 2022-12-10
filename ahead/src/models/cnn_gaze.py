@@ -74,9 +74,15 @@ class CNN_GAZE(nn.Module):
 
         self.conv2 = nn.Conv2d(32, 64, 4, stride=(2, 2))
         self.conv3 = nn.Conv2d(64, 64, 3, stride=(1, 1))
-        self.deconv1 = nn.ConvTranspose2d(64, 64, 3, stride=(1, 1))
-        self.deconv2 = nn.ConvTranspose2d(64, 32, 4, stride=(2, 2))
-        self.deconv3 = nn.ConvTranspose2d(32, 1, 8, stride=(4, 4))
+        # self.deconv1 = nn.ConvTranspose2d(64, 64, 3, stride=(1, 1))
+        # self.deconv2 = nn.ConvTranspose2d(64, 32, 4, stride=(2, 2))
+        # self.deconv3 = nn.ConvTranspose2d(32, 1, 8, stride=(4, 4))
+        self.deconv1 = nn.Conv2d(64, 64, 3, stride=(1, 1),padding = 1)
+        self.deconv2 = nn.Conv2d(64, 32, 5, stride=(1, 1),padding =2)
+        self.deconv3 = nn.Conv2d(32, 1, 7, stride=(1, 1), padding = 3)
+        self.upsample1 = nn.Upsample(scale_factor=2, mode='bilinear')
+        self.upsample2 = nn.Upsample(scale_factor=2, mode='bilinear')
+        self.upsample3 = nn.Upsample(scale_factor=3, mode='bilinear')
         # self.W = torch.nn.Parameter(torch.Tensor([1.0]), requires_grad=True)
 
         self.lin_in_shape = self.lin_in_shape()
@@ -103,17 +109,16 @@ class CNN_GAZE(nn.Module):
         x = self.pool(F.relu(self.conv3(x)))
         # x = self.batch_norm64(x)
         # x = self.dropout(x)
-
+        x = self.upsample1(x)
         x = self.pool(F.relu(self.deconv1(x)))
         # x = self.batch_norm64(x)
         # x = self.dropout(x)
-
+        x = self.upsample2(x)
         x = self.pool(F.relu(self.deconv2(x)))
         # x = self.batch_norm32(x)
         # x = self.dropout(x)
-
+        x = self.upsample3(x)
         x = self.deconv3(x)
-
         x = x.squeeze(1)
 
         x = x.view(-1, x.shape[1] * x.shape[2])
@@ -144,7 +149,6 @@ class CNN_GAZE(nn.Module):
     def loss_fn(self, loss_, smax_pi, targets):
         targets_reshpaed = targets.view(-1,
                                         targets.shape[1] * targets.shape[2])
-
         kl_loss = loss_(smax_pi, targets_reshpaed)
 
         return kl_loss

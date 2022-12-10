@@ -1,3 +1,4 @@
+from __future__ import annotations
 from src.utils.config import *
 ASSERT_BEING_RUN(__name__, __file__, "This file should not be imported. It runs src/models/selective_motion_action_net.py")
 from src.data.types import *

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file is just a base class for other action selection models.")
 from src.data.types import *

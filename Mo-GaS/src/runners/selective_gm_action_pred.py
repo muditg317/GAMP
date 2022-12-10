@@ -1,9 +1,10 @@
+from __future__ import annotations
 from src.utils.config import *
 ASSERT_BEING_RUN(__name__, __file__, "This file should not be imported. It runs src/models/selective_gaze_action_net.py")
 from src.data.types import *
 from src.data.loaders import load_hdf_data
 from src.models.types import run_mode_t
-from src.models.cnn_gaze_net import CNN_GazeNet
+from src.models.cnn_gaze_net_ import CNN_GazeNet
 from src.models.selective_gm_action_net import SelectiveGazeAndMotion_ActionNet
 from src.data.loaders import load_hdf_data
 import torch

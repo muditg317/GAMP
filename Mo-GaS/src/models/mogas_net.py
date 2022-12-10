@@ -1,3 +1,4 @@
+from __future__ import annotations
 from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file is just a base class for all types of MoGaS networks.")
 from src.data.utils import ImbalancedDatasetSampler
@@ -40,7 +41,21 @@ class MoGaS_Net(nn.Module, ABC):
     self.mode = mode
     self.opt = opt
 
-    model_save_dir = os.path.join(MODEL_SAVE_DIR, game, dataset_train)
+    train_dataset_str = dataset_train
+    train_dataset_list = dataset_train
+    if isinstance(dataset_train, list):
+      train_dataset_str = '__'.join([dt[:5] for dt in dataset_train])
+    else:
+      train_dataset_list = [train_dataset_list]
+
+    val_dataset_str = dataset_val
+    val_dataset_list = dataset_val
+    if isinstance(dataset_val, list):
+      val_dataset_str = '__'.join([dt[:5] for dt in dataset_val])
+    else:
+      val_dataset_list = [val_dataset_list]
+
+    model_save_dir = os.path.join(MODEL_SAVE_DIR, game, train_dataset_str)
     if not os.path.exists(model_save_dir):
       os.makedirs(model_save_dir)
 
@@ -50,7 +65,7 @@ class MoGaS_Net(nn.Module, ABC):
 
     log_dir = os.path.join(
       RUNS_DIR, game,
-      '{}_{}'.format(dataset_train, self.model_name))
+      '{}_{}'.format(train_dataset_str, self.model_name))
     self.writer = SummaryWriter(log_dir=os.path.join(
       log_dir, "run_{}".format(
         len(os.listdir(log_dir)) if os.path.exists(log_dir) else 0)))
@@ -63,8 +78,8 @@ class MoGaS_Net(nn.Module, ABC):
         self.train_data_iter = load_data_iter(
           game=self.game,
           data_types=self.data_types,
-          datasets=[dataset_train],
-          dataset_exclude=[dataset_val],
+          datasets=train_dataset_list,
+          dataset_exclude=val_dataset_list,
           device=self.device,
           batch_size=self.batch_size,
           sampler=ImbalancedDatasetSampler,
@@ -78,8 +93,8 @@ class MoGaS_Net(nn.Module, ABC):
         # self.val_data_iter = load_data_iter(
         #   game=self.game,
         #   data_types=self.data_types,
-        #   datasets=[dataset_val],
-        #   dataset_exclude=[dataset_train],
+        #   datasets=val_dataset_list,
+        #   dataset_exclude=train_dataset_list,
         #   device=self.device,
         #   batch_size=self.batch_size,
         #   load_type=dataset_val_load_type,
@@ -122,7 +137,12 @@ class MoGaS_Net(nn.Module, ABC):
       return
     self.epoch = epoch
     model_pickle = torch.load(self.model_save_string.format(self.epoch))
-    self.load_state_dict(model_pickle['model_state_dict'])
+    try:
+      self.load_state_dict(model_pickle['model_state_dict'])
+    except RuntimeError as e:
+      print(f"RuntimeError: {e}")
+      print(f"Model may be a bit broke")
+
     if load_optimizer:
       self.opt.load_state_dict(model_pickle['optimizer_state_dict'])
 

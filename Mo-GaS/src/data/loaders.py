@@ -1,3 +1,4 @@
+from __future__ import annotations
 from src.utils.config import *
 from src.data.types import *
 import numpy as np
@@ -366,7 +367,7 @@ class HDF5TorchChunkDataset(data.Dataset):
                                              data_types=self.data_types,
                                              device=self.device,
                                              hdf5_file=self.hdf5_file)
-    print(f"Loaded hdf data for [{self.game} - {self.curr_collation}]:\n\tTypes: {self.data_types}")
+    print(f"Loaded hdf data for [{self.game} - {self.curr_collation}]\tTypes: {self.data_types}", end='')
 
     for dtype in self.curr_collation_data:
       datum = self.curr_collation_data[dtype]
@@ -385,7 +386,8 @@ class HDF5TorchChunkDataset(data.Dataset):
     assert len(set(group_lens)) == 1
     self.curr_collation_len = group_lens[0]
 
-    print(f"Concated hdf data ({self.curr_collation_data.keys()})\n\tLength: {self.curr_collation_len}")
+    # print(f"Concated hdf data ({self.curr_collation_data.keys()})")
+    print(f"\tLength: {self.curr_collation_len}")
 
   def __reset_dataset__(self):
 
@@ -400,8 +402,8 @@ class HDF5TorchChunkDataset(data.Dataset):
       ]
 
       if old_collation is None or len(set(old_collation) ^ set(self.curr_collation)) > 0:
-        print(f"Cycling chunked datasets\n\tfrom {old_collation}")
-        print(f"\tto   {self.curr_collation}")
+        # print(f"Cycling chunked datasets\n\tfrom {old_collation}")
+        # print(f"\tto   {self.curr_collation}")
         self.__load_data__()
       # else:
       #   print(f"Skipping loading data for {self.curr_collation} (already loaded)")
