@@ -62,6 +62,9 @@ class MoGas_GazeNet(MoGaS_Net, ABC):
     end_epoch = start_epoch+epochs_to_train_for
     for epoch in range(start_epoch,end_epoch):
       print(f"Training epoch {epoch}/{end_epoch}...")
+      epoch_loss = {
+        'total': 0.0
+      }
       for i, data in enumerate(self.train_data_iter):
         x, y = self.get_data(data)
 
@@ -69,11 +72,21 @@ class MoGas_GazeNet(MoGaS_Net, ABC):
 
         smax_pi = self.forward(x)
 
-        loss = self.loss_fn(self.loss_, smax_pi, y)
-        loss.backward()
+        batch_loss = self.loss_fn(self.loss_, smax_pi, y)
+        total_batch_loss = batch_loss
+        if isinstance(batch_loss, dict):
+          total_batch_loss = 0
+          loss_name: str
+          loss: torch.Tensor
+          weight: float
+          for loss_name, (loss, weight) in batch_loss.items():
+            epoch_loss[loss_name] = epoch_loss.get(loss_name, 0.0) + loss.data.item()
+            total_batch_loss += loss * weight
+        epoch_loss['total'] += total_batch_loss.data.item()
+        total_batch_loss.backward()
         opt.step()
 
-        self.writer.add_scalar('Loss', loss.data.item(), eix)
+        self.writer.add_scalar('Loss', total_batch_loss.data.item(), eix)
 
         eix+=1
 
@@ -83,13 +96,13 @@ class MoGas_GazeNet(MoGaS_Net, ABC):
             'epoch': epoch,
             'model_state_dict': self.state_dict(),
             'optimizer_state_dict': opt.state_dict(),
-            'loss': loss,
+            'loss': total_batch_loss,
           }, self.model_save_string.format(epoch))
 
         # self.writer.add_histogram('smax', smax_pi[0])
         # self.writer.add_histogram('target', y)
         print(f"Epoch {epoch} complete:")
-        print(f"\tLoss: {loss.data.item()}")
+        print(f"\tLoss: {epoch_loss}")
         # print(f"\tLR: {lr_scheduler._last_lr[0]}")
         self.writer.add_scalar('Epoch Loss', loss.data.item(), epoch)
         # if lr_scheduler is not None:
