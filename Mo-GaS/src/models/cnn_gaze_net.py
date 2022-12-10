@@ -90,10 +90,10 @@ class CNN_GazeNet(MoGas_GazeNet):
                           out_channels=features,
                           kernel_size=3,
                           padding=1,
-                          bias=False,
+                          bias=True,
                       ),
                   ),
-                  (name + "norm1", nn.BatchNorm2d(num_features=features)),
+                #   (name + "norm1", nn.BatchNorm2d(num_features=features)),
                   (name + "relu1", nn.ReLU(inplace=True)),
                   (
                       name + "conv2",
@@ -102,10 +102,10 @@ class CNN_GazeNet(MoGas_GazeNet):
                           out_channels=features,
                           kernel_size=3,
                           padding=1,
-                          bias=False,
+                          bias=True,
                       ),
                   ),
-                  (name + "norm2", nn.BatchNorm2d(num_features=features)),
+                #   (name + "norm2", nn.BatchNorm2d(num_features=features)),
                   (name + "relu2", nn.ReLU(inplace=True)),
               ]
           )

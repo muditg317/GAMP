@@ -2,7 +2,7 @@ from src.utils.config import *
 ASSERT_BEING_RUN(__name__, __file__, "This file should not be imported. It runs src/models/selective_gaze_action_net.py and visualizes the results")
 from src.data.types import *
 from src.models.cnn_gaze_net import CNN_GazeNet
-from src.models.selective_gm_action_net import SelectiveGazeAndMotion_ActionNet
+from src.models.mogas_with_cl import SelectiveGazeAndMotion_CL_ActionNet
 from src.features.feat_utils import image_transforms
 
 import torch
@@ -34,8 +34,8 @@ episode = args.episode
 device = torch.device('cuda')
 
 data_types = ['images', 'actions', 'gazes'] # unused
-dataset_train:game_run_t = '527_RZ_4153166_Jul-26-10-00-12'     # unused
-dataset_val:game_run_t   = '527_RZ_4153166_Jul-26-10-00-12'     # unused
+dataset_train:game_run_t = '79_RZ_3074177_Aug-18-11-46-29'     # unused
+dataset_val:game_run_t   = '79_RZ_3074177_Aug-18-11-46-29'     # unused
 
 gaze_net = CNN_GazeNet(game=game,
                        data_types=data_types,
@@ -48,7 +48,7 @@ gaze_net = CNN_GazeNet(game=game,
 gaze_net.load_model_at_epoch(gaze_net_cpt)
 gaze_net.eval()
 
-action_net = SelectiveGazeAndMotion_ActionNet(game=game,
+action_net = SelectiveGazeAndMotion_CL_ActionNet(game=game,
                                               data_types=data_types,
                                               dataset_train=dataset_train,
                                               dataset_train_load_type=None,
@@ -82,6 +82,8 @@ for i_episode in range(start_episode,end_episode,1):
   observation,info = env.reset()
   ep_rew = 0
   t = 0
+  gaze_gate_count = 0
+  motion_gate_count = 0
   while True:
     # env.render()
     t += 1
@@ -92,7 +94,10 @@ for i_episode in range(start_episode,end_episode,1):
 
     observation, extra_in, acts, _ = action_net.run_inputs(observation)
     gaze, motion = extra_in
-
+    if action_net.gaze_gate_output[0] > 0.5:
+      gaze_gate_count += 1
+    if action_net.motion_gate_output[0] > 0.5:
+      motion_gate_count += 1
 
     obs = cv2.resize(obs[-1],(160,210))
     obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
@@ -150,6 +155,8 @@ for i_episode in range(start_episode,end_episode,1):
   print(f"\tLength: {t} timesteps")
   print(f"\tReward {ep_rew}")
   print(f"\tAvg reward {t_rew/(i_episode+1)}")
+  print(f"\tGaze gate frequency {gaze_gate_count}/{t} ({gaze_gate_count/t})")
+  print(f"\tMotion gate frequency {motion_gate_count}/{t} ({motion_gate_count/t})")
 
 
 print("Mean all Episode {} reward {}".format(i_episode, t_rew / (i_episode+1)))

@@ -14,6 +14,7 @@ from torch.utils import data
 import torch
 from itertools import cycle
 from collections import Counter
+import gc
 
 ASSERT_NOT_RUN(__name__, __file__, "You may have meant to run download.py or preprocess.py")
 
@@ -193,13 +194,16 @@ def load_hdf_data(
     should_close = False
   game_data = []
 
+  datasets = list(set(datasets))
   # print(datasets, list(game_h5_file.keys()))
   if len(datasets) == 1 and 'combined' in datasets:
     datasets = list(game_h5_file.keys())
-  game_data = {k: [] for k in data_types}
+  # game_data = {k: [] for k in data_types}
+  game_data_lens = {k: 0 for k in data_types}
   # print(f"Loading hdf5 data from [{game} - {datasets}]")
-  actions = []
-  for game_run in datasets:
+  
+  datasets: set[game_run_t] = set(datasets)
+  for game_run in list(datasets):
     assert game_h5_file.__contains__(game_run), f"{game_run} doesn't exist in game {game}"
     # print(f"{game_run} found in game {game} file")
     game_run_data_h5 = game_h5_file[game_run]
@@ -208,10 +212,39 @@ def load_hdf_data(
       # print(data_types)
       assert game_run_data_h5.__contains__(datum), f"{datum} doesn't exist in game {game} {game_run}"
       # print(f"{datum} found in game {game} {game_run} -- {game_run_data_h5[datum].shape}")
-      game_data[datum].append(game_run_data_h5[datum][:])
-      if device is not None:
-        game_data[datum][-1] = torch.Tensor(game_data[datum][-1]).to(device=device)
-    
+      # game_data[datum].append(game_run_data_h5[datum][:])
+      # if device is not None:
+      #   game_data[datum][-1] = torch.Tensor(game_data[datum][-1]).to(device=device)
+      # if 'mudit' in os.getcwd() and game_run_data_h5[datum].shape[0] >= 16900:
+      #   print(f"Discarding {game_run} as it has {game_run_data_h5[datum].shape[0]} frames")
+      #   datasets.discard(game_run)
+      #   break
+      game_data_lens[datum] += game_run_data_h5[datum].shape[0]
+  print(f"Data lengths are {game_data_lens} for game {game} and datasets {datasets} and data types {data_types}")
+  datasets = list(datasets)
+
+  assert len(set(game_data_lens.values())) == 1, f"Data lengths are not same for all data types {game_data_lens}"
+
+  game_data = {k: torch.zeros(game_data_lens[k], *game_run_data_h5[k].shape[1:]).to(device=device) for k in data_types}
+  game_data_running_ix = {k: 0 for k in data_types}
+  # print(game_data)
+  for game_run in datasets:
+    game_run_data_h5 = game_h5_file[game_run]
+    for datum in data_types:
+      # print(game_run_data_h5[datum].shape)
+      # print(game_data[datum].shape)
+      # print(game_data_running_ix[datum])
+      # print(game_data_running_ix[datum] + game_run_data_h5[datum].shape[0])
+      if 'mudit' in os.getcwd():
+        sub_chunk = -1
+        for sub_chunk in range(game_run_data_h5[datum].shape[0] // 1000):
+          game_data[datum][game_data_running_ix[datum] + sub_chunk * 1000:game_data_running_ix[datum] + (sub_chunk + 1) * 1000] = torch.Tensor(game_run_data_h5[datum][sub_chunk * 1000:(sub_chunk + 1) * 1000]).to(device=device)
+        game_data[datum][game_data_running_ix[datum] + (sub_chunk + 1) * 1000:game_data_running_ix[datum] + game_run_data_h5[datum].shape[0]] = torch.Tensor(game_run_data_h5[datum][(sub_chunk + 1) * 1000:]).to(device=device)
+      else:
+        game_data[datum][game_data_running_ix[datum]:game_data_running_ix[datum] + game_run_data_h5[datum].shape[0]] = torch.Tensor(game_run_data_h5[datum][:]).to(device=device)
+      game_data_running_ix[datum] += game_run_data_h5[datum].shape[0]
+      # print(game_data[datum].shape)
+
   if should_close:
     game_h5_file.close()
   return game_data
@@ -369,16 +402,23 @@ class HDF5TorchChunkDataset(data.Dataset):
   def __load_data__(self):
     for dtype in list(self.curr_collation_data.keys()):
       del self.curr_collation_data[dtype]
+    torch.cuda.empty_cache()
+    gc.collect()
     self.curr_collation_data = load_hdf_data(game=self.game,
                                              datasets=self.curr_collation,
                                              data_types=self.data_types,
                                              device=self.device,
                                              hdf5_file=self.hdf5_file)
+    if list(self.curr_collation_data.values())[0].shape[0] == 0:
+      print(f"WARNING: Collation {self.curr_collation} has no data")
+      self.curr_collation = None
+      self.__reset_dataset__()
+      return
     print(f"Loaded hdf data for [{self.game} - {self.curr_collation}]\tTypes: {self.data_types}", end='')
 
     for dtype in self.curr_collation_data:
       datum = self.curr_collation_data[dtype]
-      datum: torch.Tensor = torch.concatenate(datum, axis=0)
+      # datum: torch.Tensor = torch.concatenate(datum, axis=0)
       if dtype == 'actions':
         datum = datum.long().squeeze()[:, -1].to(
           device=self.device)
