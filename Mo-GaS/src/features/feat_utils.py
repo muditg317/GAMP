@@ -339,11 +339,13 @@ def transform_images(images, type='torch'):
 
 from torch import functional as F
 def compute_coverage_loss(embedding, heatmap):
+    # print(embedding.shape, heatmap.shape)
     flat_len = embedding.shape[-1]
     # scale down the heatmap to a square with sqrt(flat_len) as side
     scale = transforms.Resize((int(np.sqrt(flat_len)), int(np.sqrt(flat_len))))
     heatmap = scale(heatmap)
-    
+    heatmap = heatmap.view(-1, flat_len)
+
     epsilon = 2.2204e-16 # introduce epsilon to avoid log and division by zero error
     embedding = torch.clip(embedding, epsilon, 1)
     heatmap = torch.clip(heatmap, epsilon, 1)
