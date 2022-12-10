@@ -20,7 +20,7 @@ args = parser.parse_args()
 game: game_t = args.game
 
 MODE: run_mode_t = args.mode
-completed_epochs = 65
+completed_epochs = 18 # 18 is the best .100
 
 train_datasets: list[game_run_t] = ['143_JAW_3272885_Dec-14-11-35-58',
  '144_JAW_3273946_Dec-14-11-54-16',

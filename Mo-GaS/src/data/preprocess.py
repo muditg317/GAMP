@@ -65,7 +65,7 @@ def create_processed_data(stack=1,
                           from_ix=0,
                           till_ix=-1,
                           game='breakout',
-                          data_types=['images', 'actions', 'gazes', 'motion'],
+                          data_types=['images', 'actions', 'gazes'],
                           recompute=[],
                           bad_keys=[]):
     """ Loads data from all the game runs in the src/data/interim  directory, and 
@@ -193,7 +193,7 @@ def create_processed_data(stack=1,
         if do_motion:
             print(f"\tComputing motion")
 
-            motion = compute_motion(images_)
+            motion = compute_motion(torch.Tensor(images_))
 
             print(f"\t\tSaving motion dataset")
             motion = motion.cpu().numpy()

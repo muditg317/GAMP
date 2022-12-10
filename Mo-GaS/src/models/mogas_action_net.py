@@ -105,7 +105,7 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
     # has_gaze = 'gazes' in self.data_types
     # has_motion = 'motion' in self.data_types
     if isinstance(data, dict):
-      data = tuple(data[type_].to(device=self.device) for type_ in self.data_types)
+      data = tuple(data[type_].to(device=self.device) for type_ in self.data_types if type_ in data)
     elif isinstance(data, list):
       data = tuple(data_.to(device=self.device) for data_ in data)
       # x, y, *other = data
