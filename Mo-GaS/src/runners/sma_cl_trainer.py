@@ -1,29 +1,25 @@
 from __future__ import annotations
 from src.utils.config import *
-ASSERT_BEING_RUN(__name__, __file__, "This file should not be imported. It runs src/models/selective_gaze_action_net.py")
+ASSERT_BEING_RUN(__name__, __file__, "This file should not be imported. It runs src/models/selective_motion_action_net.py")
 from src.data.types import *
 from src.data.loaders import load_hdf_data
 from src.models.types import run_mode_t
+from src.models.sma_with_cl import SelectiveMotion_CL_ActionNet
 from src.models.utils import dataset_to_list_and_str
-from src.models.cnn_gaze_net import CNN_GazeNet
-from src.models.sga_with_cl import SelectiveGaze_CL_ActionNet
-from src.data.loaders import load_hdf_data
+
 import torch
 import argparse
 # pylint: disable=all
 
 parser = argparse.ArgumentParser(description='.')
 parser.add_argument('--game',required=True)
-parser.add_argument('--gaze_net_cpt',required=True,type=int)
 args = parser.parse_args()
-game: game_t = args.game
-gaze_net_cpt: int = args.gaze_net_cpt
+game:game_t = args.game
 
-# GAZE_TYPE = ["PRED","REAL"]
-GAZE_TYPE = "PRED"
+MODE:run_mode_t = 'train'
 completed_epochs = {
   'breakout': {
-    '527_RZ_4153166_Jul-26-10-00-12': 246,
+    '527_RZ_4153166_Jul-26-10-00-12': 0,
   },
   'centipede': {
     '150_KM_3357098_Dec-15-10-59-11': 0,
@@ -34,7 +30,9 @@ completed_epochs = completed_epochs[game] if game in completed_epochs else {}
 train_datasets = val_datasets = ['combined']
 
 if game == 'phoenix':
-  val_datasets = ['606_RZ_5215078_Aug-07-16-59-46', '600_RZ_5203429_Aug-07-13-44-39',
+  train_datasets = ['214_RZ_7226016_Jan-11-11-04-01']
+  val_datasets = ['214_RZ_7226016_Jan-11-11-04-01',
+                  '606_RZ_5215078_Aug-07-16-59-46', '600_RZ_5203429_Aug-07-13-44-39',
                   '598_RZ_5120717_Aug-06-14-53-30', '574_RZ_4682055_Aug-01-12-54-58',
                   '565_RZ_4604537_Jul-31-15-22-57', '550_RZ_4513408_Jul-30-14-04-09',
                   '540_RZ_4425986_Jul-29-13-47-10']
@@ -78,24 +76,23 @@ elif game == 'centipede':
 # val_datasets = ['']
 device = torch.device('cuda')
 
-action_data_types = ['images', 'actions', 'gazes']
-gaze_data_types = ['images', 'gazes']
+data_types = ['images', 'actions']
 
 train_dataset_list, train_dataset_str = dataset_to_list_and_str(train_datasets)
 val_dataset_list, val_dataset_str = dataset_to_list_and_str(val_datasets)
 completed_epochs = completed_epochs[train_dataset_str] if train_dataset_str in completed_epochs else 0
 
-action_net = SelectiveGaze_CL_ActionNet(game=game,
-                                        data_types=action_data_types,
-                                        dataset_train=train_datasets,
-                                        dataset_train_load_type='chunked',
-                                        dataset_val=val_datasets,
-                                        dataset_val_load_type='chunked',
-                                        device=device,
-                                        mode='train',
-                                        load_model=True,
-                                        epoch=completed_epochs,
-                                        ).to(device=device)
+action_net = SelectiveMotion_CL_ActionNet(game=game,
+                                          data_types=data_types,
+                                          dataset_train=train_datasets,
+                                          dataset_train_load_type='chunked',
+                                          dataset_val=val_datasets,
+                                          dataset_val_load_type='chunked',
+                                          device=device,
+                                          mode=MODE,
+                                          load_model=True,
+                                          epoch=completed_epochs,
+                                          ).to(device=device)
 optimizer = torch.optim.Adadelta(action_net.parameters(), lr=5e-1, rho=0.9)
 # lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
 #     optimizer, lr_lambda=lambda x: x*0.95)
@@ -104,23 +101,7 @@ lr_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer,lr_lambda=lam
 # lr_scheduler = None
 loss_ = torch.nn.CrossEntropyLoss().to(device=device)
 
-if GAZE_TYPE == "PRED":
-  gaze_net = CNN_GazeNet(game=game,
-                        data_types=gaze_data_types,
-                        dataset_train=train_datasets,
-                        dataset_val=val_datasets,
-                        dataset_train_load_type=None,
-                        dataset_val_load_type=None,
-                        device=device,
-                        mode='eval').to(device=device)
-  gaze_net.load_model_at_epoch(gaze_net_cpt)
 
-  action_net.train_loop(opt=optimizer,
-                        lr_scheduler=lr_scheduler,
-                        loss_function=loss_,
-                        gaze_pred=gaze_net)
-
-else:
-  action_net.train_loop(opt=optimizer,
-                        lr_scheduler=lr_scheduler,
-                        loss_function=loss_)
+action_net.train_loop(opt=optimizer,
+                      lr_scheduler=lr_scheduler,
+                      loss_function=loss_)
