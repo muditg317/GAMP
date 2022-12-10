@@ -125,7 +125,8 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
     # if has_motion and len(x_m.shape) < 4:
     #   x_m = x_m.unsqueeze(1)
     
-    data = tuple(datum.unsqueeze(1) if len(datum.shape) < 4 else datum for datum in data)
+    # don't want to unsqueeze the y
+    data = tuple(datum.unsqueeze(1) if len(datum.shape) < 4 and i != 1 else datum for i,datum in enumerate(data))
     
     # outputs = [x, y]
     # if has_gaze:

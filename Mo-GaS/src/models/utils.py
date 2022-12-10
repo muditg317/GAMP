@@ -32,7 +32,10 @@ def dataset_to_list_and_str(dataset: list[str]) -> str:
   dataset_str = dataset
   dataset_list = dataset
   if isinstance(dataset, list):
-    dataset_str = '__'.join([dt[:5] for dt in dataset])
+    if len(dataset) > 1:
+      dataset_str = '__'.join([dt[:5] for dt in dataset])
+    else:
+      dataset_str = dataset[0]
   else:
     dataset_list = [dataset_list]
   return dataset_list, dataset_str

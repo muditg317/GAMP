@@ -36,7 +36,7 @@ if game == 'breakout':
   dataset_train:game_run_t = '527_RZ_4153166_Jul-26-10-00-12'     # unused
   dataset_val:game_run_t   = '527_RZ_4153166_Jul-26-10-00-12'     # unused
 elif game == 'centipede':
-  dataset_train = '97_RZ_3586578_Aug-24-09-59-20'
+  dataset_train = '150_KM_3357098_Dec-15-10-59-11'
   dataset_val = '69_RZ_2831643_Aug-15-16-16-35'
 
 action_net = SelectiveMotion_ActionNet(game=game,

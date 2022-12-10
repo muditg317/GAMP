@@ -65,7 +65,7 @@ def create_processed_data(stack=1,
                           from_ix=0,
                           till_ix=-1,
                           game='breakout',
-                          data_types=['images', 'actions', 'gazes', 'motion'],
+                          data_types=['images', 'actions', 'gazes'],
                           recompute=[],
                           bad_keys=[]):
     """ Loads data from all the game runs in the src/data/interim  directory, and 

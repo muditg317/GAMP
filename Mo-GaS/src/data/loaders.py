@@ -257,7 +257,7 @@ def load_data_iter(*,
   if isinstance(datasets, str):
     datasets = [datasets]
 
-  print(f"Loading data iterator for [{game} - {datasets}]...\n\tUsing {load_type} load type\n\tFetching data types: {data_types}\n\tUsing sampler: {sampler}")
+  print(f"Loading data iterator for [{game} - {datasets}] (excluding {dataset_exclude})...\n\tUsing {load_type} load type\n\tFetching data types: {data_types}")
 
   if load_type == 'memory':
     hdf_data = load_hdf_data(game=game, datasets=datasets, data_types=data_types)
@@ -304,12 +304,12 @@ def load_data_iter(*,
                                     datasets=datasets,
                                     device=device)
 
-  print(f"    Using sampler: {sampler}")
   if sampler is None:
     data_iter = data.DataLoader(dataset,
                                 batch_size=batch_size,
                                 num_workers=0)
   else:
+    print(f"    Using sampler: {sampler}")
     data_iter = data.DataLoader(dataset,
                                 batch_size=batch_size,
                                 sampler=sampler(dataset))
@@ -350,7 +350,12 @@ class HDF5TorchChunkDataset(data.Dataset):
       groups = groups & set(self.datasets)
     groups = list(sorted(groups, reverse=True))
     print(f"Loading chunked data for {game} with groups: {groups}")
-    
+    if len(groups) < self.num_groups_to_collate:
+      print(f"Cannot collate {self.num_groups_to_collate} groups from {groups} (too few groups)")
+      print(f"keys: {self.hdf5_file.keys()}")
+      print(f"excluded: {self.dataset_exclude}")
+      print(f"datasets: {self.datasets}")
+
     self.groups = cycle(groups)
     self.group_lens = [
       self.hdf5_file[g]['actions'].len() for g in groups

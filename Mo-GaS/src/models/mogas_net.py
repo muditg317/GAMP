@@ -65,12 +65,12 @@ class MoGaS_Net(nn.Module, ABC):
       if dataset_train_load_type is None:
         self.train_data_iter = None
       else:
-        print(f"Training data: Loading {dataset_train_load_type} data for {dataset_train}\n\tUsing sampler {ImbalancedDatasetSampler}")
+        print(f"Training data: Loading {dataset_train_load_type} data for {dataset_train}")
         self.train_data_iter = load_data_iter(
           game=self.game,
           data_types=self.data_types,
           datasets=train_dataset_list,
-          dataset_exclude=val_dataset_list,
+          # dataset_exclude=val_dataset_list,
           device=self.device,
           batch_size=self.batch_size,
           sampler=ImbalancedDatasetSampler,
@@ -85,7 +85,7 @@ class MoGaS_Net(nn.Module, ABC):
         #   game=self.game,
         #   data_types=self.data_types,
         #   datasets=val_dataset_list,
-        #   dataset_exclude=train_dataset_list,
+        #   # dataset_exclude=train_dataset_list,
         #   device=self.device,
         #   batch_size=self.batch_size,
         #   load_type=dataset_val_load_type,
