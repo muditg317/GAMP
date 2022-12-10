@@ -67,9 +67,9 @@ class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
 
         x_g = compute_motion(x).unsqueeze(1)
 
-        x = x[:, -1].unsqueeze(1)
+    x = x[:, -1].unsqueeze(1)
         
-        # x_g = x * x_g ## Moved scaling to forward pass
+    # x_g = x * x_g ## Moved scaling to forward pass
     return x, x_g
 
   def forward(self, x, x_g):

@@ -257,7 +257,7 @@ def load_data_iter(*,
   if isinstance(datasets, str):
     datasets = [datasets]
 
-  print(f"Loading data iterator for [{game} - {datasets}]...\n\tUsing {load_type} load type\n\tFetching data types: {data_types}")
+  print(f"Loading data iterator for [{game} - {datasets}]...\n\tUsing {load_type} load type\n\tFetching data types: {data_types}\n\tUsing sampler: {sampler}")
 
   if load_type == 'memory':
     hdf_data = load_hdf_data(game=game, datasets=datasets, data_types=data_types)
@@ -269,9 +269,10 @@ def load_data_iter(*,
     dataset.labels = y_[0][:, -1]
 
   elif load_type == 'disk':
+    assert len(datasets) == 1, "Disk load type only supports one dataset"
     dataset = HDF5TorchDataset(game=game,
-                   data=data_types,
-                   datasets=datasets,
+                   data_types=data_types,
+                   dataset=datasets[0],
                    device=device)
   elif load_type == 'live':
     assert len(datasets) == 1, "Live load type only supports one dataset"
@@ -303,6 +304,7 @@ def load_data_iter(*,
                                     datasets=datasets,
                                     device=device)
 
+  print(f"    Using sampler: {sampler}")
   if sampler is None:
     data_iter = data.DataLoader(dataset,
                                 batch_size=batch_size,

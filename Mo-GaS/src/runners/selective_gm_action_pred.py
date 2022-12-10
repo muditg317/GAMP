@@ -21,7 +21,12 @@ gaze_net_cpt: int = args.gaze_net_cpt
 MODE = 'train'
 # GAZE_TYPE = ["PRED","REAL"]
 GAZE_TYPE = "PRED"
-completed_epochs = 4
+completed_epochs = {
+  'breakout': {
+    '527_RZ_4153166_Jul-26-10-00-12': 110,
+  },
+}
+completed_epochs = completed_epochs[game] if game in completed_epochs else {}
 
 train_datasets = val_datasets = ['combined']
 
@@ -72,6 +77,8 @@ data_types = ['images', 'actions', 'gazes']
 
 train_dataset = train_datasets[0]
 val_dataset = val_datasets[0]
+completed_epochs = completed_epochs[train_dataset] if train_dataset in completed_epochs else 0
+
 action_net = SelectiveGazeAndMotion_ActionNet(game=game,
                                               data_types=data_types,
                                               dataset_train=train_dataset,

@@ -32,17 +32,21 @@ episode = args.episode
 device = torch.device('cuda')
 
 data_types = ['images', 'actions', 'gazes'] # unused
-dataset_train:game_run_t = '527_RZ_4153166_Jul-26-10-00-12'     # unused
-dataset_val:game_run_t   = '527_RZ_4153166_Jul-26-10-00-12'     # unused
+if game == 'breakout':
+  dataset_train:game_run_t = '527_RZ_4153166_Jul-26-10-00-12'     # unused
+  dataset_val:game_run_t   = '527_RZ_4153166_Jul-26-10-00-12'     # unused
+elif game == 'centipede':
+  dataset_train = '97_RZ_3586578_Aug-24-09-59-20'
+  dataset_val = '69_RZ_2831643_Aug-15-16-16-35'
 
 action_net = SelectiveMotion_ActionNet(game=game,
-                                     data_types=data_types,
-                                     dataset_train=dataset_train,
-                                     dataset_train_load_type=None,
-                                     dataset_val=dataset_val,
-                                     dataset_val_load_type=None,
-                                     device=device,
-                                     mode=EVAL_MODE).to(device=device)
+                                      data_types=data_types,
+                                      dataset_train=dataset_train,
+                                      dataset_train_load_type=None,
+                                      dataset_val=dataset_val,
+                                      dataset_val_load_type=None,
+                                      device=device,
+                                      mode=EVAL_MODE).to(device=device)
 action_net.load_model_at_epoch(action_cpt)
 action_net.eval()
 
@@ -94,8 +98,15 @@ for i_episode in range(start_episode,end_episode,1):
     cv2.waitKey(1)
     
     action = action_net.process_activations_for_inference(acts)
-    if game == 'breakout' and np.random.random() < 0.1:
-      action = ACTIONS_ENUM['PLAYER_A_FIRE']
+    
+    if game == 'breakout':
+      if action == ACTIONS_ENUM['PLAYER_A_FIRE']:
+        print("Agent tried to fire")
+        if np.sum(motion_true) == 0:
+          print("\t While there was no motion!!")
+          # action = ACTIONS_ENUM['NOOP']
+      if np.random.random() < 0.1:
+        action = ACTIONS_ENUM['PLAYER_A_FIRE']
     observation, reward, done, trun, info = env.step(action)
 
     ep_rew += reward
