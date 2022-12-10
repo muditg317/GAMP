@@ -3,6 +3,7 @@ from src.utils.config import *
 ASSERT_NOT_RUN(__name__, __file__, "This file defines a CNN-based gaze predictor for Atari gameplay, it should simply be imported elsewhere.")
 from src.models.mogas_gaze_net import MoGas_GazeNet
 from src.models.utils import NOOP_POOL_PARAMS
+from collections import OrderedDict
 
 import torch
 import torch.nn as nn
@@ -12,35 +13,100 @@ import torch.nn.functional as F
 class CNN_GazeNet(MoGas_GazeNet):
   def __init__(self, **kwargs):
     super(CNN_GazeNet, self).__init__(**kwargs)
+    in_channels = 4
+    out_channels = 1
+    features = 32
+    self.encoder1 = CNN_GazeNet._block(in_channels, features, name="enc1")
+    self.pool1 = nn.MaxPool2d(kernel_size=3, stride=3)
+    self.encoder2 = CNN_GazeNet._block(features, features * 2, name="enc2")
+    self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+    self.encoder3 = CNN_GazeNet._block(features * 2, features * 4, name="enc3")
+    self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
+    # self.encoder4 = CNN_GazeNet._block(features * 4, features * 8, name="enc4")
+    # self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-    self.conv1 = nn.Conv2d(4, 32, 8, stride=(4, 4))
-    self.conv2 = nn.Conv2d(32, 64, 4, stride=(2, 2))
-    self.conv3 = nn.Conv2d(64, 64, 3, stride=(1, 1))
-    self.pool = nn.MaxPool2d(**NOOP_POOL_PARAMS)
-    self.deconv1 = nn.Conv2d(64, 64, 3, stride=(1, 1),padding = 1)
-    self.deconv2 = nn.Conv2d(64, 32, 5, stride=(1, 1),padding = 2)
-    self.deconv3 = nn.Conv2d(32, 1, 5, stride=(1, 1),padding = 2)
-    self.upsample1 = nn.Upsample(scale_factor=2, mode='bilinear')
-    self.upsample2 = nn.Upsample(scale_factor=2, mode='bilinear')
-    self.upsample3 = nn.Upsample(scale_factor=3, mode='bilinear')
+    self.bottleneck = CNN_GazeNet._block(features * 4, features * 8, name="bottleneck")
+
+    # self.upconv4 = nn.ConvTranspose2d(
+    #     features * 16, features * 8, kernel_size=2, stride=2
+    # )
+    # self.decoder4 = CNN_GazeNet._block((features * 8) * 2, features * 8, name="dec4")
+    self.upconv3 = nn.ConvTranspose2d(
+        features * 8, features * 4, kernel_size=2, stride=2
+    )
+    self.decoder3 = CNN_GazeNet._block((features * 4) * 2, features * 4, name="dec3")
+    self.upconv2 = nn.ConvTranspose2d(
+        features * 4, features * 2, kernel_size=2, stride=2
+    )
+    self.decoder2 = CNN_GazeNet._block((features * 2) * 2, features * 2, name="dec2")
+    self.upconv1 = nn.ConvTranspose2d(
+        features * 2, features, kernel_size=3, stride=3
+    )
+    self.decoder1 = CNN_GazeNet._block(features * 2, features, name="dec1")
+
+    self.conv = nn.Conv2d(
+        in_channels=features, out_channels=out_channels, kernel_size=1
+    )
 
   def forward(self, x: torch.Tensor) -> torch.Tensor:
-    x = self.pool(F.relu(self.conv1(x)))
+      enc1 = self.encoder1(x)
+      enc2 = self.encoder2(self.pool1(enc1))
+      enc3 = self.encoder3(self.pool2(enc2))
+      # enc4 = self.encoder4(self.pool3(enc3))
 
-    x = self.pool(F.relu(self.conv2(x)))
+      bottleneck = self.bottleneck(self.pool3(enc3))
 
-    x = self.pool(F.relu(self.conv3(x)))
+      # dec4 = self.upconv4(bottleneck)
+      # dec4 = torch.cat((dec4, enc4), dim=1)
+      # dec4 = self.decoder4(dec4)
+      dec3 = self.upconv3(bottleneck)
+      dec3 = torch.cat((dec3, enc3), dim=1)
+      dec3 = self.decoder3(dec3)
+      dec2 = self.upconv2(dec3)
+      dec2 = torch.cat((dec2, enc2), dim=1)
+      dec2 = self.decoder2(dec2)
+      dec1 = self.upconv1(dec2)
+      dec1 = torch.cat((dec1, enc1), dim=1)
+      dec1 = self.decoder1(dec1)
+      x = self.conv(dec1)
 
-    x = F.relu(self.deconv1(self.upsample1(x)))
+      x = x.squeeze(1)
 
-    x = F.relu(self.deconv2(self.upsample2(x)))
+      x = x.view(-1, x.shape[1] * x.shape[2]) # reshape to (batch_size, flattened image)
 
-    x = self.deconv3(self.upsample3(x))
+      x = F.log_softmax(x, dim=1) # use log_softmax for KL-div loss (requires input to be log probabilities)
 
-    x = x.squeeze(1)
+      return x
 
-    x = x.view(-1, x.shape[1] * x.shape[2]) # reshape to (batch_size, flattened image)
-
-    x = F.log_softmax(x, dim=1) # use log_softmax for KL-div loss (requires input to be log probabilities)
-
-    return x
+  @staticmethod
+  def _block(in_channels, features, name):
+      return nn.Sequential(
+          OrderedDict(
+              [
+                  (
+                      name + "conv1",
+                      nn.Conv2d(
+                          in_channels=in_channels,
+                          out_channels=features,
+                          kernel_size=3,
+                          padding=1,
+                          bias=False,
+                      ),
+                  ),
+                  (name + "norm1", nn.BatchNorm2d(num_features=features)),
+                  (name + "relu1", nn.ReLU(inplace=True)),
+                  (
+                      name + "conv2",
+                      nn.Conv2d(
+                          in_channels=features,
+                          out_channels=features,
+                          kernel_size=3,
+                          padding=1,
+                          bias=False,
+                      ),
+                  ),
+                  (name + "norm2", nn.BatchNorm2d(num_features=features)),
+                  (name + "relu2", nn.ReLU(inplace=True)),
+              ]
+          )
+      )

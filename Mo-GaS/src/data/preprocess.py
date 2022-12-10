@@ -193,7 +193,7 @@ def create_processed_data(stack=1,
         if do_motion:
             print(f"\tComputing motion")
 
-            motion = compute_motion(images_)
+            motion = compute_motion(torch.Tensor(images_))
 
             print(f"\t\tSaving motion dataset")
             motion = motion.cpu().numpy()

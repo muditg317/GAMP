@@ -102,6 +102,7 @@ for i_episode in range(start_episode,end_episode,1):
 
     observation, gaze, acts, _ = action_net.run_inputs(observation)
     gaze = gaze[0]
+    # print(gaze.shape)
 
     # gaze_ = gaze.squeeze().cpu().numpy()
     # gaze_top90 = np.percentile(gaze_,90)
