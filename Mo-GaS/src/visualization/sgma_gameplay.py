@@ -34,7 +34,7 @@ episode = args.episode
 device = torch.device('cuda')
 
 data_types = ['images', 'actions', 'gazes'] # unused
-dataset_train:game_run_t = '527_RZ_4153166_Jul-26-10-00-12'     # unused
+dataset_train:game_run_t = '143_J__144_J__150_K__152_K__204_R__206_R__210_R__244_R__286_R__450_R'     # unused
 dataset_val:game_run_t   = '527_RZ_4153166_Jul-26-10-00-12'     # unused
 
 gaze_net = CNN_GazeNet(game=game,
@@ -115,12 +115,13 @@ for i_episode in range(start_episode,end_episode,1):
     motion_true = cv2.applyColorMap(motion_true,cv2.COLORMAP_HOT)
 
 
-    gaze_ = cv2.addWeighted(gaze_true,0.25*action_net.gaze_gate_output[0],obs,0.5,0)*2
-    motion_ = cv2.addWeighted(motion_true,0.25*action_net.motion_gate_output[0],obs,0.5,0)*2
-
-    cv2.imshow("gaze_and_motion_normalized", cv2.addWeighted(gaze_,0.5,motion_,0.5,0))
+    gaze_ = cv2.addWeighted(gaze_true,0.5,obs,0.5,0)*2
+    # motion_ = cv2.addWeighted(motion_true,0.5,obs,0.5,0)*2
+    gaze_ = cv2.resize(gaze_,(480,630)) 
+    # motion_ = cv2.resize(motion_,(480,630)) 
+    # cv2.imshow("gaze_and_motion_normalized", cv2.addWeighted(gaze_,0.5,motion_,0.5,0))
     # cv2.imshow("motion_pred_normalized",motion_)
-    # cv2.imshow("gaze_pred_normalized",gaze_)
+    cv2.imshow("gaze_pred_normalized",gaze_)
     # cv2.imshow("obs",obs)
     cv2.waitKey(1)
 
