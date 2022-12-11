@@ -5,8 +5,8 @@ from src.data.types import *
 from src.data.loaders import load_hdf_data
 from src.models.types import run_mode_t
 from src.models.utils import dataset_to_list_and_str
-from src.models.cnn_gaze_net import CNN_GazeNet
-from src.models.selective_gaze_action_net import SelectiveGaze_ActionNet
+# from src.models.cnn_gaze_net import CNN_GazeNet
+from src.models.behavior_cloning_action_net import BehaviorCloning_ActionNet
 from src.data.loaders import load_hdf_data
 import torch
 import argparse
@@ -14,10 +14,8 @@ import argparse
 
 parser = argparse.ArgumentParser(description='.')
 parser.add_argument('--game',required=True)
-parser.add_argument('--gaze_net_cpt',required=True,type=int)
 args = parser.parse_args()
 game: game_t = args.game
-gaze_net_cpt: int = args.gaze_net_cpt
 
 MODE:run_mode_t = 'train'
 # GAZE_TYPE = ["PRED","REAL"]
@@ -109,7 +107,7 @@ train_dataset_list, train_dataset_str = dataset_to_list_and_str(train_datasets)
 val_dataset_list, val_dataset_str = dataset_to_list_and_str(val_datasets)
 completed_epochs = completed_epochs[train_dataset_str] if train_dataset_str in completed_epochs else 0
 
-action_net = SelectiveGaze_ActionNet(game=game,
+action_net = BehaviorCloning_ActionNet(game=game,
                                      data_types=action_data_types,
                                      dataset_train=train_datasets,
                                      dataset_train_load_type='chunked',
@@ -128,55 +126,9 @@ lr_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer,lr_lambda=lam
 # lr_scheduler = None
 loss_ = torch.nn.CrossEntropyLoss().to(device=device)
 
-if MODE == 'eval':
-  if GAZE_TYPE == "PRED":
-    gaze_net = CNN_GazeNet(game=game,
-                          data_types=gaze_data_types,
-                          dataset_train=train_datasets,
-                          dataset_val=val_datasets,
-                          dataset_train_load_type='chunked',
-                          dataset_val_load_type='chunked',
-                          device=device,
-                          mode='eval').to(device=device)
-
-    gaze_net.load_model_at_epoch(gaze_net_cpt)
-    curr_group_data = load_hdf_data(game=game,
-                                    dataset=val_datasets,
-                                    data_types=['images', 'gazes'],
-                                    )
-
-    x, y = curr_group_data.values()
-    x = x[0]
-    y = y[0]
-
-    image_ = x[204]
-    image_ = torch.Tensor(image_).to(device=device).unsqueeze(0)
-    gaze_ = y[205]
-
-    xg = gaze_net.infer(image_).repeat(
-        1, image_.shape[1], 1, 1).to(device=device)
-    acts = action_net.infer(image_, xg)
-    acts = acts  # .data.item()
-
-
+if MODE == 'train':
+  action_net.train_loop(opt=optimizer,
+                        lr_scheduler=lr_scheduler,
+                        loss_function=loss_)
 else:
-    if GAZE_TYPE == "PRED":
-        gaze_net = CNN_GazeNet(game=game,
-                            data_types=gaze_data_types,
-                            dataset_train=train_datasets,
-                            dataset_val=val_datasets,
-                            dataset_train_load_type='chunked',
-                            dataset_val_load_type='chunked',
-                            device=device,
-                            mode='eval').to(device=device)
-        gaze_net.load_model_at_epoch(gaze_net_cpt)
-
-        action_net.train_loop(opt=optimizer,
-                              lr_scheduler=lr_scheduler,
-                              loss_function=loss_,
-                              gaze_pred=gaze_net)
-
-    else:
-        action_net.train_loop(opt=optimizer,
-                              lr_scheduler=lr_scheduler,
-                              loss_function=loss_)
+  pass

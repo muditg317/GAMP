@@ -34,8 +34,8 @@ episode = args.episode
 device = torch.device('cuda')
 
 data_types = ['images', 'actions', 'gazes'] # unused
-dataset_train:game_run_t = '143_J__144_J__150_K__152_K__204_R__206_R__210_R__244_R__286_R__450_R'     # unused
-dataset_val:game_run_t   = '527_RZ_4153166_Jul-26-10-00-12'     # unused
+dataset_train:game_run_t = ['combined']     # unused
+dataset_val:game_run_t   = ['combined']    # unused
 
 gaze_net = CNN_GazeNet(game=game,
                        data_types=data_types,
@@ -61,7 +61,7 @@ action_net.load_model_at_epoch(action_cpt)
 action_net.eval()
 
 
-env = gym.make(GYM_ENV_MAP[game], full_action_space=True, frameskip=1)
+env = gym.make(GYM_ENV_MAP[game], difficulty = 0, full_action_space=True, frameskip=1)
 env = FrameStack(env, 4)
 # env = RecordVideo(env,env_name)
 # print(env._env_info())
@@ -79,6 +79,8 @@ for i_episode in range(start_episode,end_episode,1):
   observation,info = env.reset()
   ep_rew = 0
   t = 0
+  gaze_gate_count = 0
+  motion_gate_count = 0
   while True:
     # env.render()
     t += 1
@@ -89,6 +91,10 @@ for i_episode in range(start_episode,end_episode,1):
 
     observation, extra_in, acts, _ = action_net.run_inputs(observation)
     gaze, motion = extra_in
+    if action_net.gaze_gate_output[0] > 0.5:
+      gaze_gate_count += 1
+    if action_net.motion_gate_output[0] > 0.5:
+      motion_gate_count += 1
 
 
     obs = cv2.resize(obs[-1],(160,210))
@@ -115,13 +121,13 @@ for i_episode in range(start_episode,end_episode,1):
     motion_true = cv2.applyColorMap(motion_true,cv2.COLORMAP_HOT)
 
 
-    gaze_ = cv2.addWeighted(gaze_true,0.5,obs,0.5,0)*2
-    # motion_ = cv2.addWeighted(motion_true,0.5,obs,0.5,0)*2
+    gaze_ = cv2.addWeighted(gaze_true,0.5*action_net.gaze_gate_output[0],obs,0.5,0)*2
+    motion_ = cv2.addWeighted(motion_true,0.5*action_net.motion_gate_output[0],obs,0.5,0)*2
     gaze_ = cv2.resize(gaze_,(480,630)) 
-    # motion_ = cv2.resize(motion_,(480,630)) 
-    # cv2.imshow("gaze_and_motion_normalized", cv2.addWeighted(gaze_,0.5,motion_,0.5,0))
+    motion_ = cv2.resize(motion_,(480,630)) 
+    cv2.imshow("gaze_and_motion_normalized", cv2.addWeighted(gaze_,0.5,motion_,0.5,0))
     # cv2.imshow("motion_pred_normalized",motion_)
-    cv2.imshow("gaze_pred_normalized",gaze_)
+    # cv2.imshow("gaze_pred_normalized",gaze_)
     # cv2.imshow("obs",obs)
     cv2.waitKey(1)
 
@@ -137,6 +143,8 @@ for i_episode in range(start_episode,end_episode,1):
       if np.sum(motion_true) == 0 and np.random.random() < 0.1:
         print(f"{t}: Forced fire")
         action = ACTIONS_ENUM['PLAYER_A_FIRE']
+    elif game == 'freeway':
+      action = 2
     observation, reward, done, trun, info = env.step(action)
 
     ep_rew += reward
@@ -148,6 +156,8 @@ for i_episode in range(start_episode,end_episode,1):
   print(f"\tLength: {t} timesteps")
   print(f"\tReward {ep_rew}")
   print(f"\tAvg reward {t_rew/(i_episode+1)}")
+  print(f"\tGaze gate frequency {gaze_gate_count}/{t} ({gaze_gate_count/t})")
+  print(f"\tMotion gate frequency {motion_gate_count}/{t} ({motion_gate_count/t})")
 
 
 print("Mean all Episode {} reward {}".format(i_episode, t_rew / (i_episode+1)))

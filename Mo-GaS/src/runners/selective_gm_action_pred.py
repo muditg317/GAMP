@@ -33,7 +33,7 @@ completed_epochs = {
     '143_J__144_J__150_K__152_K__204_R__206_R__210_R__244_R__286_R__450_R': 0,
   },
   'freeway': {
-    'combined': 0,
+    'combined': 1,
   },
 }
 completed_epochs = completed_epochs[game] if game in completed_epochs else {}
