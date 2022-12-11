@@ -2,6 +2,7 @@ from __future__ import annotations
 from src.utils.config import *
 ASSERT_BEING_RUN(__name__, __file__, "This file should not be imported. It runs src/models/selective_gaze_action_net.py and visualizes the results")
 from src.data.types import *
+from src.visualization.model_utils import GAME_MODEL
 from src.models.cnn_gaze_net import CNN_GazeNet
 from src.models.selective_gaze_action_net import SelectiveGaze_ActionNet
 from src.features.feat_utils import image_transforms
@@ -22,14 +23,19 @@ transform_images = image_transforms()
 
 parser = argparse.ArgumentParser(description='.')
 parser.add_argument('--game',required=True)
-parser.add_argument('--action_cpt',required=True,type=int)
-parser.add_argument('--gaze_net_cpt',required=True,type=int)
+parser.add_argument('--action_cpt',type=int)
+parser.add_argument('--gaze_net_cpt',type=int)
 parser.add_argument('--episode',default=None,type=int)
 args = parser.parse_args()
 game:game_t = args.game
-action_cpt = args.action_cpt
-gaze_net_cpt = args.gaze_net_cpt
-episode = args.episode
+if args.action_cpt:
+  action_cpt = args.action_cpt
+else:
+  action_cpt = GAME_MODEL[game]['SelectiveGaze_ActionNet']
+if args.gaze_net_cpt:
+  gaze_net_cpt = args.gaze_net_cpt
+else:
+  gaze_net_cpt = GAME_MODEL[game]['CNN_GazeNet']  
 
 
 device = torch.device('cuda')
@@ -65,7 +71,7 @@ action_net.gaze_pred_model = gaze_net
 action_net.gaze_pred_model.load_model_at_epoch(gaze_net_cpt)
 action_net.gaze_pred_model.eval()
 
-env = gym.make(GYM_ENV_MAP[game],difficulty = 1, full_action_space=True, frameskip=1)
+env = gym.make(GYM_ENV_MAP[game],mode = 7,difficulty = 1, full_action_space=True, frameskip=1)
 env = FrameStack(env, 4)
 # env = RecordVideo(env,env_name)
 # print(env._env_info())

@@ -3,6 +3,7 @@ from src.utils.config import *
 ASSERT_BEING_RUN(__name__, __file__, "This file should not be imported. It runs src/models/selective_gaze_action_net.py and visualizes the results")
 from src.data.types import *
 # from src.models.cnn_gaze_net import CNN_GazeNet
+from src.visualization.model_utils import GAME_MODEL
 from src.models.behavior_cloning_action_net import BehaviorCloning_ActionNet
 from src.features.feat_utils import image_transforms
 
@@ -22,11 +23,14 @@ transform_images = image_transforms()
 
 parser = argparse.ArgumentParser(description='.')
 parser.add_argument('--game',required=True)
-parser.add_argument('--action_cpt',required=True,type=int)
+parser.add_argument('--action_cpt',type=int)
 parser.add_argument('--episode',default=None,type=int)
 args = parser.parse_args()
 game:game_t = args.game
-action_cpt = args.action_cpt
+if args.action_cpt:
+  action_cpt = args.action_cpt
+else:
+  action_cpt = GAME_MODEL[game]['BehaviorCloning_ActionNet']
 episode = args.episode
 
 
@@ -51,7 +55,7 @@ action_net = BehaviorCloning_ActionNet(game=game,
 action_net.load_model_at_epoch(action_cpt)
 action_net.eval()
 
-env = gym.make(GYM_ENV_MAP[game],difficulty = 1, full_action_space=True, frameskip=1)
+env = gym.make(GYM_ENV_MAP[game],mode = 7,difficulty = 1, full_action_space=True, frameskip=1)
 env = FrameStack(env, 4)
 # env = RecordVideo(env,env_name)
 # print(env._env_info())
@@ -77,8 +81,8 @@ for i_episode in range(start_episode,end_episode,1):
     observation = torch.stack(
       [transform_images(o.__array__()).squeeze() for o in observation]).unsqueeze(0).to(device=device)
 
-    observation, gaze, acts, _ = action_net.run_inputs(observation)
-    gaze = gaze[0]
+    observation,_, acts, _ = action_net.run_inputs(observation)
+    
     # print(gaze.shape)
 
     # gaze_ = gaze.squeeze().cpu().numpy()
@@ -100,19 +104,8 @@ for i_episode in range(start_episode,end_episode,1):
 
     obs = cv2.resize(obs[-1],(160,210))
     obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
-    # gaze_ = cv2.addWeighted(gaze_,0.25,obs,0.5,0)*2
-
-    gaze_true = gaze.squeeze().cpu().numpy()
-    # gaze_true = (gaze / observation).squeeze().cpu().numpy()
-    gaze_true = (gaze_true - np.min(gaze_true)) / (np.max(gaze_true) - np.min(gaze_true))
-
-    gaze_true = np.array(cv2.resize(gaze_true,(160,210))*255,dtype=np.uint8)
-    gaze_true = cv2.applyColorMap(gaze_true,cv2.COLORMAP_TURBO)
-    
-    gaze_ = cv2.addWeighted(gaze_true,0.25,obs,0.5,0)*2
-
-    gaze_ = cv2.resize(gaze_,(480,630))
-    cv2.imshow("gaze_pred_normalized",gaze_)
+    obs = cv2.resize(obs,(480,630))
+    cv2.imshow("gaze_pred_normalized",obs)
     cv2.waitKey(1)
     
     action = action_net.process_activations_for_inference(acts)
