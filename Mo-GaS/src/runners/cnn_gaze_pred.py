@@ -5,6 +5,7 @@ from src.data.types import *
 from src.data.loaders import load_hdf_data
 from src.models.types import run_mode_t
 from src.models.cnn_gaze_net import CNN_GazeNet
+from src.models.utils import dataset_to_list_and_str
 from src.features.feat_utils import draw_figs_
 
 import torch
@@ -20,7 +21,23 @@ args = parser.parse_args()
 game: game_t = args.game
 
 MODE: run_mode_t = args.mode
-completed_epochs = 8 # 24 is the best for centipede.05 
+completed_epochs = {
+  'breakout': {
+    '527_RZ_4153166_Jul-26-10-00-12': 110,
+  },
+  'centipede': {
+    '143_J__144_J__150_K__152_K__204_R__206_R__210_R__244_R__286_R__450_R': 24,
+  },
+  'freeway': {
+    'combined': 8,
+    '79_RZ_3074177_Aug-18-11-46-29': 8,
+  },
+  'phoenix': {
+    'combined': 0,
+  },
+}
+completed_epochs = completed_epochs[game] if game in completed_epochs else {}
+
 
 train_datasets: list[game_run_t] = ['combined']
 # ['143_JAW_3272885_Dec-14-11-35-58',
@@ -53,6 +70,9 @@ device: torch.device = torch.device('cuda')
 
 data_types: list[datatype_t] = ['images', 'gazes']
 
+train_dataset_list, train_dataset_str = dataset_to_list_and_str(train_datasets)
+val_dataset_list, val_dataset_str = dataset_to_list_and_str(val_datasets)
+completed_epochs = completed_epochs[train_dataset_str] if train_dataset_str in completed_epochs else 0
 gaze_net = CNN_GazeNet(game=game,
                        data_types=data_types,
                        dataset_train=train_datasets,

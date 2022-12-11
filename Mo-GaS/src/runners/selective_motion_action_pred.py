@@ -24,6 +24,9 @@ completed_epochs = {
   'centipede': {
     '150_KM_3357098_Dec-15-10-59-11': 1,
   },
+  'phoenix': {
+    '214_RZ_7226016_Jan-11-11-04-01': 0,
+  },
 }
 completed_epochs = completed_epochs[game] if game in completed_epochs else {}
 

@@ -69,6 +69,7 @@ for i_episode in range(start_episode,end_episode,1):
   observation,info = env.reset()
   ep_rew = 0
   t = 0
+  motion_gate_count = 0
   while True:
     # env.render()
     t += 1
@@ -77,8 +78,10 @@ for i_episode in range(start_episode,end_episode,1):
     observation = torch.stack(
       [transform_images(o.__array__()).squeeze() for o in observation]).unsqueeze(0).to(device=device)
 
-    observation, motion, acts, _ = action_net.run_inputs(observation)
-    motion = motion[0]
+    observation, extra_in, acts, _ = action_net.run_inputs(observation)
+    motion = extra_in[0]
+    if action_net.motion_gate_output[0] > 0.5:
+      motion_gate_count += 1
 
     obs = cv2.resize(obs[-1],(160,210))
     obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
@@ -118,6 +121,7 @@ for i_episode in range(start_episode,end_episode,1):
   print(f"\tLength: {t} timesteps")
   print(f"\tReward {ep_rew}")
   print(f"\tAvg reward {t_rew/(i_episode+1)}")
+  print(f"\tMotion gate frequency {motion_gate_count}/{t} ({motion_gate_count/t})")
 
 
 print("Mean all Episode {} reward {}".format(i_episode, t_rew / (i_episode+1)))

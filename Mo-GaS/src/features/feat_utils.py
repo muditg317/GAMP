@@ -223,26 +223,20 @@ def make_heatmap(pdf, tol=1e-2): # takes tensor
 
     return wpdf
 
-MOTION_PDF_out_dim = (84,84)
+MOTION_PDF_out_dim = torch.Size((84,84))
 def motion_pdf(image1, image2): # takes tensors
     in_dim = torch.tensor(image1.shape[:2]).cuda() # w,h
-    dim_scale = torch.divide(torch.tensor(MOTION_PDF_out_dim).cuda(), in_dim).float().cuda()
-
-    motion_pts = torch.argwhere(image1 != image2)[:,:2].cuda()
-    motion_pts = torch.multiply(motion_pts, dim_scale).int().cuda()
-    motion_pts = torch.clip(motion_pts, 0, MOTION_PDF_out_dim[0]-1).long().cuda()
-
-    # pdfs_true = [np.zeros(MOTION_PDF_out_dim)]
-    # for motion_pt in motion_pts:
-    #     rv = multivariate_normal(mean=motion_pt,
-    #                             cov=[[2.85 * 2.85, 0], [0, 2.92 * 2.92]])
-    #     pdfs_true.append(rv.pdf(MOTION_PDF_pos))
-    # pdf = np.sum(pdfs_true, axis=0)
-
-    # motion_map = make_heatmap(torch.tensor(pdf).cuda())
-    
-    motion_map = torch.zeros(MOTION_PDF_out_dim).cuda()
-    motion_map[motion_pts[:,0], motion_pts[:,1]] = 1
+    # dim_scale = torch.divide(torch.tensor(MOTION_PDF_out_dim).cuda(), in_dim).float().cuda()
+    # print(image1.shape)
+    # print(image2.shape)
+    motion_map = torch.abs(image1 - image2).cuda()
+    if motion_map.shape != MOTION_PDF_out_dim:
+        # motion_pts = torch.argwhere(image1 != image2)[:,:2].cuda()
+        # motion_pts = torch.multiply(motion_pts, dim_scale).int().cuda()
+        # motion_pts = torch.clip(motion_pts, 0, MOTION_PDF_out_dim[0]-1).long().cuda()
+        # motion_map = torch.zeros(MOTION_PDF_out_dim).cuda()
+        # motion_map[motion_pts[:,0], motion_pts[:,1]] = 1
+        motion_map = transforms.functional.resize(motion_map, MOTION_PDF_out_dim)
 
     motion_map = transforms.functional.gaussian_blur(motion_map.unsqueeze(0), 7).squeeze(0)
 

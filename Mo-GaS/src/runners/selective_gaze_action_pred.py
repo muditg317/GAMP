@@ -31,7 +31,10 @@ completed_epochs = {
   },
   'freeway': {
     'combined': 0,
-  }
+  },
+  'phoenix': {
+    'combined': 0,
+  },
 }
 completed_epochs = completed_epochs[game] if game in completed_epochs else {}
 
