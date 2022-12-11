@@ -31,13 +31,16 @@ episode = args.episode
 
 device = torch.device('cuda')
 
-data_types = ['images', 'actions', 'gazes'] # unused
+data_types = ['images', 'actions'] # unused
 if game == 'breakout':
   dataset_train:game_run_t = '527_RZ_4153166_Jul-26-10-00-12'     # unused
   dataset_val:game_run_t   = '527_RZ_4153166_Jul-26-10-00-12'     # unused
 elif game == 'centipede':
   dataset_train = '150_KM_3357098_Dec-15-10-59-11'
   dataset_val = '69_RZ_2831643_Aug-15-16-16-35'
+elif game == 'phoenix':
+  dataset_train = '214_RZ_7226016_Jan-11-11-04-01'
+  dataset_val = '214_RZ_7226016_Jan-11-11-04-01'
 
 action_net = SelectiveMotion_ActionNet(game=game,
                                       data_types=data_types,
@@ -80,7 +83,7 @@ for i_episode in range(start_episode,end_episode,1):
 
     observation, extra_in, acts, _ = action_net.run_inputs(observation)
     motion = extra_in[0]
-    if action_net.motion_gate_output[0] > 0.5:
+    if action_net.gate_output[0] > 0.5:
       motion_gate_count += 1
 
     obs = cv2.resize(obs[-1],(160,210))
