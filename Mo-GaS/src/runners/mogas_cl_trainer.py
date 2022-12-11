@@ -25,10 +25,13 @@ completed_epochs = {
     '527_RZ_4153166_Jul-26-10-00-12': 0,
   },
   'centipede': {
-    '150_KM_3357098_Dec-15-10-59-11': 9,
+    '150_KM_3357098_Dec-15-10-59-11': 21,
   },
   'freeway': {
-    '79_RZ_3074177_Aug-18-11-46-29': 0,
+    '79_RZ_3074177_Aug-18-11-46-29': 107,
+  },
+  'phoenix': {
+    '214_RZ_7226016_Jan-11-11-04-01': 17,
   },
 }
 completed_epochs = completed_epochs[game] if game in completed_epochs else {}
@@ -36,6 +39,7 @@ completed_epochs = completed_epochs[game] if game in completed_epochs else {}
 train_datasets = val_datasets = ['combined']
 
 if game == 'phoenix':
+  train_datasets = ['214_RZ_7226016_Jan-11-11-04-01']
   val_datasets = ['606_RZ_5215078_Aug-07-16-59-46', '600_RZ_5203429_Aug-07-13-44-39',
                   '598_RZ_5120717_Aug-06-14-53-30', '574_RZ_4682055_Aug-01-12-54-58',
                   '565_RZ_4604537_Jul-31-15-22-57', '550_RZ_4513408_Jul-30-14-04-09',
@@ -122,8 +126,10 @@ if GAZE_TYPE == "PRED":
                         lr_scheduler=lr_scheduler,
                         loss_function=loss_,
                         gaze_pred=gaze_net,
+                        GAME_PLAY_FREQ=10,
                         LR_SCHEDULER_FREQ=1,
-                        epochs_to_train=600,)
+                        epochs_to_train=600,
+                        gym_episodes_per_epoch=1)
 
 else:
   action_net.train_loop(opt=optimizer,

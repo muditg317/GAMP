@@ -42,6 +42,7 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
                  GAME_PLAY_FREQ=1,
                  LR_SCHEDULER_FREQ=6,
                  epochs_to_train=300,
+                 gym_episodes_per_epoch=2,
                  ):
     self.loss_ = loss_function
     self.opt = opt
@@ -107,7 +108,7 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
         # self.calc_val_metrics(epoch)
 
       if epoch % GAME_PLAY_FREQ == 0:
-        self.game_play(epoch)
+        self.game_play(epoch, episodes=gym_episodes_per_epoch)
       if lr_scheduler is not None and epoch % LR_SCHEDULER_FREQ == 0:
           lr_scheduler.step()
 
@@ -240,11 +241,13 @@ class MoGaS_ActionNet(MoGaS_Net, ABC):
     return (acc / ix)
   
   def game_play(self,epoch,episodes=2):
+    if episodes == 0:
+      return
     print(f"Playing {episodes} episodes of {self.game} at epoch {epoch}...")
 
     transform_images = image_transforms()
 
-    env = gym.make(GYM_ENV_MAP[self.game], full_action_space=True,frameskip=1)
+    env = gym.make(GYM_ENV_MAP[self.game], full_action_space=True,frameskip=1, max_episode_steps=18000)
     env = FrameStack(env, STACK_SIZE)
     # env = Monitor(env,self.game,force=True)
 

@@ -34,7 +34,7 @@ episode = args.episode
 device = torch.device('cuda')
 
 data_types = ['images', 'actions', 'gazes'] # unused
-dataset_train:game_run_t = '79_RZ_3074177_Aug-18-11-46-29'     # unused
+dataset_train:game_run_t = '214_RZ_7226016_Jan-11-11-04-01'     # unused
 dataset_val:game_run_t   = '79_RZ_3074177_Aug-18-11-46-29'     # unused
 
 gaze_net = CNN_GazeNet(game=game,

@@ -14,8 +14,8 @@ import torch.nn.functional as F
 
 class SelectiveGazeAndMotion_CL_ActionNet(MoGaS_Gazed_ActionNet):
   def __init__(self, *,
-               gaze_coverage_loss_weight: float = 0.0005,
-               motion_coverage_loss_weight: float = 0.0005,
+               gaze_coverage_loss_weight: float = 0.005,
+               motion_coverage_loss_weight: float = 0.0025,
                **kwargs):
     super().__init__(**kwargs)
     self.gaze_coverage_loss_weight = gaze_coverage_loss_weight
