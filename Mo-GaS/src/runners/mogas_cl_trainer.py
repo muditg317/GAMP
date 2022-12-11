@@ -2,12 +2,11 @@ from __future__ import annotations
 from src.utils.config import *
 ASSERT_BEING_RUN(__name__, __file__, "This file should not be imported. It runs src/models/selective_gaze_action_net.py")
 from src.data.types import *
-from src.data.loaders import load_hdf_data
 from src.models.types import run_mode_t
-from src.models.utils import dataset_to_list_and_str
 from src.models.cnn_gaze_net import CNN_GazeNet
-from src.models.sga_with_cl import SelectiveGaze_CL_ActionNet
-from src.data.loaders import load_hdf_data
+from src.models.mogas_with_cl import SelectiveGazeAndMotion_CL_ActionNet
+from src.models.utils import dataset_to_list_and_str
+
 import torch
 import argparse
 # pylint: disable=all
@@ -26,7 +25,10 @@ completed_epochs = {
     '527_RZ_4153166_Jul-26-10-00-12': 0,
   },
   'centipede': {
-    '150_KM_3357098_Dec-15-10-59-11': 0,
+    '150_KM_3357098_Dec-15-10-59-11': 9,
+  },
+  'freeway': {
+    '79_RZ_3074177_Aug-18-11-46-29': 0,
   },
 }
 completed_epochs = completed_epochs[game] if game in completed_epochs else {}
@@ -50,6 +52,7 @@ elif game == 'breakout':
                    '527_RZ_4153166_Jul-26-10-00-12' ]
 
 elif game == 'freeway':
+  train_datasets = ['79_RZ_3074177_Aug-18-11-46-29']
   val_datasets = ['151_JAW_3358283_Dec-15-11-19-24','157_KM_6307437_Jan-18-14-31-43',
                   '149_JAW_3355334_Dec-15-10-31-51','79_RZ_3074177_Aug-18-11-46-29',
                   '156_KM_6306308_Jan-18-14-13-55']
@@ -79,34 +82,34 @@ elif game == 'centipede':
 device = torch.device('cuda')
 
 action_data_types = ['images', 'actions', 'gazes']
-gaze_data_types = ['images', 'gazes']
+gaze_data_types = ['images','gazes']
 
 train_dataset_list, train_dataset_str = dataset_to_list_and_str(train_datasets)
 val_dataset_list, val_dataset_str = dataset_to_list_and_str(val_datasets)
 completed_epochs = completed_epochs[train_dataset_str] if train_dataset_str in completed_epochs else 0
 
-action_net = SelectiveGaze_CL_ActionNet(game=game,
-                                        data_types=action_data_types,
-                                        dataset_train=train_datasets,
-                                        dataset_train_load_type='chunked',
-                                        dataset_val=val_datasets,
-                                        dataset_val_load_type='chunked',
-                                        device=device,
-                                        mode='train',
-                                        load_model=True,
-                                        epoch=completed_epochs,
-                                        ).to(device=device)
+action_net = SelectiveGazeAndMotion_CL_ActionNet(game=game,
+                                                data_types=action_data_types,
+                                                dataset_train=train_datasets,
+                                                dataset_train_load_type='chunked',
+                                                dataset_val=val_datasets,
+                                                dataset_val_load_type='chunked',
+                                                device=device,
+                                                mode='train',
+                                                load_model=True,
+                                                epoch=completed_epochs,
+                                                ).to(device=device)
 optimizer = torch.optim.Adadelta(action_net.parameters(), lr=5e-1, rho=0.9)
 # lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
 #     optimizer, lr_lambda=lambda x: x*0.95)
-lr_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer,lr_lambda=lambda e:0.8)
+lr_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer,lr_lambda=lambda e:0.95)
 
 # lr_scheduler = None
 loss_ = torch.nn.CrossEntropyLoss().to(device=device)
 
 if GAZE_TYPE == "PRED":
   gaze_net = CNN_GazeNet(game=game,
-                        data_types=gaze_data_types,
+                        data_types=action_data_types,
                         dataset_train=train_datasets,
                         dataset_val=val_datasets,
                         dataset_train_load_type=None,
@@ -118,7 +121,9 @@ if GAZE_TYPE == "PRED":
   action_net.train_loop(opt=optimizer,
                         lr_scheduler=lr_scheduler,
                         loss_function=loss_,
-                        gaze_pred=gaze_net)
+                        gaze_pred=gaze_net,
+                        LR_SCHEDULER_FREQ=1,
+                        epochs_to_train=600,)
 
 else:
   action_net.train_loop(opt=optimizer,
