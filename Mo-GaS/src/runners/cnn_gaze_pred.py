@@ -20,9 +20,34 @@ args = parser.parse_args()
 game: game_t = args.game
 
 MODE: run_mode_t = args.mode
-completed_epochs = 8 # 24 is the best for centipede.05 
+completed_epochs = 34 # 24 is the best for centipede.05 
 
-train_datasets: list[game_run_t] = ['combined']
+if game == 'phoenix':
+  
+  train_datasets: list[game_run_t] = ['180_RZ_9095735_Jun-15-15-50-51',
+ '184_RZ_9435442_Jun-19-14-13-02',
+ '186_RZ_9439314_Jun-19-15-16-39',
+ '194_RZ_204115_Jun-28-11-44-33',
+ '214_RZ_7226016_Jan-11-11-04-01',
+ '234_RZ_9500596_Feb-06-18-51-35',
+ '305_RZ_9315734_May-31-10-16-17',
+ '306_RZ_9589522_Jun-03-14-19-59',
+ '343_RZ_1415157_Jun-24-17-26-40',
+ '357_RZ_1927863_Jun-30-15-51-50'] #above is phoenix
+
+  val_datasets: list[game_run_t] = ['370_RZ_2089207_Jul-02-12-40-47',
+  '382_RZ_2264036_Jul-04-13-16-46',
+  '392_RZ_2355652_Jul-05-14-41-42',]
+  #  '408_RZ_2612013_Jul-08-13-54-14',
+  #  '427_RZ_2884737_Jul-11-17-41-09',
+  #  '435_RZ_3050833_Jul-13-15-48-31',
+  #  '440_RZ_3136193_Jul-14-15-31-45',
+  #  '451_RZ_3223057_Jul-15-15-38-19',
+  #  '465_RZ_3303208_Jul-16-13-54-07',
+  #  '477_RZ_3401134_Jul-17-17-06-25']
+
+if game == 'freeway':
+  train_datasets: list[game_run_t] =['combined']
 # ['143_JAW_3272885_Dec-14-11-35-58',
 #  '144_JAW_3273946_Dec-14-11-54-16',
 #  '150_KM_3357098_Dec-15-10-59-11',
@@ -33,8 +58,9 @@ train_datasets: list[game_run_t] = ['combined']
 #  '244_RZ_594187_Feb-19-10-37-42',
 #  '286_RZ_5620664_Apr-18-15-56-48',
 #  '450_RZ_3221959_Jul-15-15-19-59']
-# train_dataset = train_datasets[0]
-val_datasets: list[game_run_t] = ['617_RZ_5374717_Aug-09-13-19-21']#['combined']
+
+
+  val_datasets: list[game_run_t] =['617_RZ_5374717_Aug-09-13-19-21']#['combined']
 #  [
 #  '481_RZ_3471184_Jul-18-12-35-05',
 #  '501_RZ_3566169_Jul-19-14-57-05',
@@ -46,7 +72,6 @@ val_datasets: list[game_run_t] = ['617_RZ_5374717_Aug-09-13-19-21']#['combined']
 #  '88_RZ_3437559_Aug-22-16-33-34',
 #  '94_RZ_3508931_Aug-23-12-23-06',
 #  '97_RZ_3586578_Aug-24-09-59-20']
-# val_dataset = val_datasets[0]
 
 device: torch.device = torch.device('cuda')
 # print('Using device:', device, torch.cuda.get_device_name(device))
@@ -83,8 +108,8 @@ if MODE=='eval':
                                   device=device,
                                   )
   x, y = curr_group_data.values()
-  x = x[0]
-  y = y[0]
+  # x = x[0]
+  # y = y[0]
   # print(x.shape)
   # print(y.shape)
   imag = np.random.randint(0,5000,16)

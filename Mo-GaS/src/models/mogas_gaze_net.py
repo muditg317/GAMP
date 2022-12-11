@@ -104,14 +104,14 @@ class MoGas_GazeNet(MoGaS_Net, ABC):
         print(f"Epoch {epoch} complete:")
         print(f"\tLoss: {epoch_loss}")
         # print(f"\tLR: {lr_scheduler._last_lr[0]}")
-        self.writer.add_scalar('Epoch Loss', loss.data.item(), epoch)
+        self.writer.add_scalar('Epoch Loss', epoch_loss['total'], epoch)
         # if lr_scheduler is not None:
         #   self.writer.add_scalar('Learning Rate', lr_scheduler._last_lr[0], epoch)
         # self.writer.add_scalar('Epoch Val Loss',
         #                        self.val_loss().data.item(), epoch)
 
       if lr_scheduler is not None:# and epoch % LR_SCHEDULER_FREQ == 0:
-        lr_scheduler.step(loss)
+        lr_scheduler.step(epoch_loss['total'])
 
   def get_data(self, data: dict[str, torch.Tensor] | list[torch.Tensor]):
     if isinstance(data, dict):
