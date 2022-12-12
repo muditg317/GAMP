@@ -89,6 +89,7 @@ for i_episode in range(start_episode,end_episode,1):
   observation,info = env.reset()
   ep_rew = 0
   t = 0
+  gaze_gate_count = 0
   while True:
     # env.render()
     t += 1
@@ -97,9 +98,11 @@ for i_episode in range(start_episode,end_episode,1):
     observation = torch.stack(
       [transform_images(o.__array__()).squeeze() for o in observation]).unsqueeze(0).to(device=device)
 
-    observation, gaze, acts, _ = action_net.run_inputs(observation)
-    gaze = gaze[0]
+    observation, extra_in, acts, _ = action_net.run_inputs(observation)
+    gaze = extra_in[0]
     # print(gaze.shape)
+    if action_net.gate_output[0] > 0.5:
+      gaze_gate_count += 1
 
     # gaze_ = gaze.squeeze().cpu().numpy()
     # gaze_top90 = np.percentile(gaze_,90)
@@ -149,6 +152,7 @@ for i_episode in range(start_episode,end_episode,1):
   print(f"\tLength: {t} timesteps")
   print(f"\tReward {ep_rew}")
   print(f"\tAvg reward {t_rew/(i_episode+1)}")
+  print(f"\tGaze gate frequency {gaze_gate_count}/{t} ({gaze_gate_count/t})")
 
 
 print("Mean all Episode {} reward {}".format(i_episode, t_rew / (i_episode+1)))
