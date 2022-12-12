@@ -79,9 +79,12 @@ env = FrameStack(env, 4)
 # print(env._env_info())
 
 t_rew = 0
+total_t = 0
+total_gaze_gate_count = 0
+total_motion_gate_count = 0
 if episode is None:
   start_episode = 0
-  end_episode = 30
+  end_episode = 300
 else:
   start_episode = episode
   end_episode = start_episode+1
@@ -160,16 +163,23 @@ for i_episode in range(start_episode,end_episode,1):
     observation, reward, done, trun, info = env.step(action)
 
     ep_rew += reward
-    if done or trun:
+    if done or trun or t > 18000:
       # print("Episode finished after {} timesteps".format(t + 1))
       break
   t_rew += ep_rew
+  total_t += t
+  total_gaze_gate_count += gaze_gate_count
+  total_motion_gate_count += motion_gate_count
   print(f"Episode {i_episode} finished...")
   print(f"\tLength: {t} timesteps")
   print(f"\tReward {ep_rew}")
-  print(f"\tAvg reward {t_rew/(i_episode+1)}")
   print(f"\tGaze gate frequency {gaze_gate_count}/{t} ({gaze_gate_count/t})")
   print(f"\tMotion gate frequency {motion_gate_count}/{t} ({motion_gate_count/t})")
+  print(f"\tAvg timesteps {total_t/(i_episode+1)}")
+  print(f"\tAvg reward {t_rew/(i_episode+1)}")
+  print(f"\tAvg gaze gate frequency {total_gaze_gate_count/total_t}")
+  print(f"\tAvg motion gate frequency {total_motion_gate_count/total_t}")
+
 
 
 print("Mean all Episode {} reward {}".format(i_episode, t_rew / (i_episode+1)))

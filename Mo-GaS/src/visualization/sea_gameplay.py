@@ -77,9 +77,11 @@ env = FrameStack(env, 4)
 # print(env._env_info())
 
 t_rew = 0
+total_t = 0
+total_gaze_gate_count = 0
 if episode is None:
   start_episode = 0
-  end_episode = 30
+  end_episode = 300
 else:
   start_episode = episode
   end_episode = start_episode+1
@@ -132,7 +134,7 @@ for i_episode in range(start_episode,end_episode,1):
     gaze_true = np.array(cv2.resize(gaze_true,(160,210))*255,dtype=np.uint8)
     gaze_true = cv2.applyColorMap(gaze_true,cv2.COLORMAP_TURBO)
     
-    gaze_ = cv2.addWeighted(gaze_true,0.25,obs,0.5,0)*2
+    gaze_ = cv2.addWeighted(gaze_true,0.25*action_net.gate_output[0],obs,0.5,0)*2
 
     gaze_ = cv2.resize(gaze_,(480,630))
     cv2.imshow("gaze_pred_normalized",gaze_)
@@ -144,16 +146,19 @@ for i_episode in range(start_episode,end_episode,1):
     observation, reward, done, trun, info = env.step(action)
 
     ep_rew += reward
-    if done or trun:
+    if done or trun or t > 18000:
       # print("Episode finished after {} timesteps".format(t + 1))
       break
   t_rew += ep_rew
+  total_t += t
+  total_gaze_gate_count += gaze_gate_count
   print(f"Episode {i_episode} finished...")
   print(f"\tLength: {t} timesteps")
   print(f"\tReward {ep_rew}")
-  print(f"\tAvg reward {t_rew/(i_episode+1)}")
   print(f"\tGaze gate frequency {gaze_gate_count}/{t} ({gaze_gate_count/t})")
-
+  print(f"\tAvg timesteps {total_t/(i_episode+1)}")
+  print(f"\tAvg reward {t_rew/(i_episode+1)}")
+  print(f"\tAvg gaze gate frequency {total_gaze_gate_count/total_t}")
 
 print("Mean all Episode {} reward {}".format(i_episode, t_rew / (i_episode+1)))
 env.close()
