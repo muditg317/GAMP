@@ -69,15 +69,15 @@ class BehaviorCloning_ActionNet(MoGaS_ActionNet):
     # print(f"Using gazes: {torch.mean(x_g)}")
 
     x = self.pool(self.relu(self.conv1(x)))
-    x = self.batch_norm32_1(x)
+    # x = self.batch_norm32_1(x)
     # x = self.dropout(x)
 
     x = self.pool(self.relu(self.conv2(x)))
-    x = self.batch_norm64_1(x)
+    # x = self.batch_norm64_1(x)
     # x = self.dropout(x)
 
     x = self.pool(self.relu(self.conv3(x)))
-    x = self.batch_norm64_2(x)
+    # x = self.batch_norm64_2(x)
     # x = self.dropout(x)
     # x = x.view(-1, 64 * torch.prod(self.lin_in_shape))
     x = x.flatten(start_dim=1)

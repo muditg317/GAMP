@@ -86,15 +86,15 @@ class SelectiveGazeAndMotion_ActionNet(MoGaS_Gazed_ActionNet):
     x_m = x * x_m
 
     x = self.frame_pool(self.frame_relu(self.frame_conv1(x)))
-    x = self.frame_bn32_1(x)
+    # x = self.frame_bn32_1(x)
     # x = self.dropout(x)
 
     x = self.frame_pool(self.frame_relu(self.frame_conv2(x)))
-    x = self.frame_bn64_1(x)
+    # x = self.frame_bn64_1(x)
     # x = self.dropout(x)
 
     x = self.frame_pool(self.frame_relu(self.frame_conv3(x)))
-    x = self.frame_bn64_2(x)
+    # x = self.frame_bn64_2(x)
     # x = self.dropout(x)
 
     # x_cgl = self.softmax_cgl(self.conv4_cgl(x))
@@ -128,15 +128,15 @@ class SelectiveGazeAndMotion_ActionNet(MoGaS_Gazed_ActionNet):
 
     # gaze forward
     x_g = self.gaze_pool(self.gaze_relu(self.gaze_conv1(x_g)))
-    x_g = self.gaze_bn32_1(x_g)
+    # x_g = self.gaze_bn32_1(x_g)
     # x_g = self.dropout(x_g)
 
     x_g = self.gaze_pool(self.gaze_relu(self.gaze_conv2(x_g)))
-    x_g = self.gaze_bn64_1(x_g)
+    # x_g = self.gaze_bn64_1(x_g)
     # x_g = self.dropout(x_g)
 
     x_g = self.gaze_pool(self.gaze_relu(self.gaze_conv3(x_g)))
-    x_g = self.gaze_bn64_2(x_g)
+    # x_g = self.gaze_bn64_2(x_g)
     # x_g = self.dropout(x_g)
 
 
@@ -163,15 +163,15 @@ class SelectiveGazeAndMotion_ActionNet(MoGaS_Gazed_ActionNet):
 
     # motion forward
     x_m = self.motion_pool(self.motion_relu(self.motion_conv1(x_m)))
-    x_m = self.motion_bn32_1(x_m)
+    # x_m = self.motion_bn32_1(x_m)
     # x_m = self.dropout(x_m)
 
     x_m = self.motion_pool(self.motion_relu(self.motion_conv2(x_m)))
-    x_m = self.motion_bn64_1(x_m)
+    # x_m = self.motion_bn64_1(x_m)
     # x_m = self.dropout(x_m)
 
     x_m = self.motion_pool(self.motion_relu(self.motion_conv3(x_m)))
-    x_m = self.motion_bn64_2(x_m)
+    # x_m = self.motion_bn64_2(x_m)
     # x_m = self.dropout(x_m)
 
 

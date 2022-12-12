@@ -78,15 +78,15 @@ class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
     # print(f"Using gazes: {torch.mean(x_g)}")
 
     x = self.pool(self.relu(self.conv1(x)))
-    x = self.batch_norm32_1(x)
+    # x = self.batch_norm32_1(x)
     # x = self.dropout(x)
 
     x = self.pool(self.relu(self.conv2(x)))
-    x = self.batch_norm64_1(x)
+    # x = self.batch_norm64_1(x)
     # x = self.dropout(x)
 
     x = self.pool(self.relu(self.conv3(x)))
-    x = self.batch_norm64_2(x)
+    # x = self.batch_norm64_2(x)
     # x = self.dropout(x)
 
     # x_cgl = self.softmax_cgl(self.conv4_cgl(x))
@@ -116,15 +116,15 @@ class SelectiveGaze_ActionNet(MoGaS_Gazed_ActionNet):
     x_g = x_g * gate_output
 
     x_g = self.pool2(self.relu2(self.conv21(x_g)))
-    x_g = self.batch_norm32_2(x_g)
+    # x_g = self.batch_norm32_2(x_g)
     # x_g = self.dropout(x_g)
 
     x_g = self.pool2(self.relu2(self.conv22(x_g)))
-    x_g = self.batch_norm64_3(x_g)
+    # x_g = self.batch_norm64_3(x_g)
     # x_g = self.dropout(x_g)
 
     x_g = self.pool2(self.relu2(self.conv23(x_g)))
-    x_g = self.batch_norm64_4(x_g)
+    # x_g = self.batch_norm64_4(x_g)
     # x_g = self.dropout(x_g)
 
     # combine gaze conv + frame conv
