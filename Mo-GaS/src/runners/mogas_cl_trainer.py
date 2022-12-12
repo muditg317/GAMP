@@ -32,7 +32,7 @@ completed_epochs = {
     '79_RZ_3074177_Aug-18-11-46-29': 107,
   },
   'phoenix': {
-    '214_RZ_7226016_Jan-11-11-04-01': 23,
+    '180_R__184_R__186_R__194_R__214_R__234_R__305_R__306_R__343_R__357_R': 0,
   },
 }
 completed_epochs = completed_epochs[game] if game in completed_epochs else {}
@@ -40,11 +40,21 @@ completed_epochs = completed_epochs[game] if game in completed_epochs else {}
 train_datasets = val_datasets = ['combined']
 
 if game == 'phoenix':
-  train_datasets = ['214_RZ_7226016_Jan-11-11-04-01']
-  val_datasets = ['606_RZ_5215078_Aug-07-16-59-46', '600_RZ_5203429_Aug-07-13-44-39',
-                  '598_RZ_5120717_Aug-06-14-53-30', '574_RZ_4682055_Aug-01-12-54-58',
-                  '565_RZ_4604537_Jul-31-15-22-57', '550_RZ_4513408_Jul-30-14-04-09',
-                  '540_RZ_4425986_Jul-29-13-47-10']
+  train_datasets: list[game_run_t] = ['180_RZ_9095735_Jun-15-15-50-51',
+  '184_RZ_9435442_Jun-19-14-13-02',
+  '186_RZ_9439314_Jun-19-15-16-39',
+  '194_RZ_204115_Jun-28-11-44-33',
+  '214_RZ_7226016_Jan-11-11-04-01',
+  '234_RZ_9500596_Feb-06-18-51-35',
+  '305_RZ_9315734_May-31-10-16-17',
+  '306_RZ_9589522_Jun-03-14-19-59',
+  '343_RZ_1415157_Jun-24-17-26-40',
+  '357_RZ_1927863_Jun-30-15-51-50'] 
+  val_datasets = ['370_RZ_2089207_Jul-02-12-40-47','382_RZ_2264036_Jul-04-13-16-46',
+                  # '598_RZ_5120717_Aug-06-14-53-30', '574_RZ_4682055_Aug-01-12-54-58',
+                  # '565_RZ_4604537_Jul-31-15-22-57', '550_RZ_4513408_Jul-30-14-04-09',
+                  # '540_RZ_4425986_Jul-29-13-47-10'
+                   ]
 
 elif game == 'asterix':
   val_datasets = ['543_RZ_4430054_Jul-29-14-54-56',
@@ -108,10 +118,10 @@ action_net = SelectiveGazeAndMotion_CL_ActionNet(game=game,
                                                 load_model=True,
                                                 epoch=completed_epochs,
                                                 ).to(device=device)
-optimizer = torch.optim.Adadelta(action_net.parameters(), lr=5e-1, rho=0.9)
+optimizer = torch.optim.Adadelta(action_net.parameters(), lr=5e-3, rho=0.9)
 # lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
 #     optimizer, lr_lambda=lambda x: x*0.95)
-lr_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer,lr_lambda=lambda e:0.95)
+lr_scheduler = torch.optim.lr_scheduler.MultiplicativeLR(optimizer,lr_lambda=lambda e:0.9)
 
 # lr_scheduler = None
 loss_ = torch.nn.CrossEntropyLoss().to(device=device)

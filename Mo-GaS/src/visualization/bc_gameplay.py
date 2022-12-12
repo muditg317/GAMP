@@ -55,7 +55,7 @@ action_net = BehaviorCloning_ActionNet(game=game,
 action_net.load_model_at_epoch(action_cpt)
 action_net.eval()
 
-env = gym.make(GYM_ENV_MAP[game],mode = 7,difficulty = 1, full_action_space=True, frameskip=1)
+env = gym.make(GYM_ENV_MAP[game],mode = 0,difficulty = 0, full_action_space=True, frameskip=1,max_episode_steps=20000)
 env = FrameStack(env, 4)
 # env = RecordVideo(env,env_name)
 # print(env._env_info())
@@ -102,11 +102,11 @@ for i_episode in range(start_episode,end_episode,1):
     # gaze_ = np.array(cv2.resize(gaze_,(160,210))*255,dtype=np.uint8)
     # gaze_ = cv2.applyColorMap(gaze_,cv2.COLORMAP_TURBO)
 
-    obs = cv2.resize(obs[-1],(160,210))
-    obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
-    obs = cv2.resize(obs,(480,630))
-    cv2.imshow("gaze_pred_normalized",obs)
-    cv2.waitKey(1)
+    # obs = cv2.resize(obs[-1],(160,210))
+    # obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
+    # obs = cv2.resize(obs,(480,630))
+    # cv2.imshow("gaze_pred_normalized",obs)
+    # cv2.waitKey(1)
     
     action = action_net.process_activations_for_inference(acts)
     if game == 'breakout' and np.random.random() < 0.1:

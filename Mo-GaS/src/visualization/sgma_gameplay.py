@@ -73,7 +73,7 @@ action_net.gaze_pred_model.load_model_at_epoch(gaze_net_cpt)
 action_net.gaze_pred_model.eval()
 
 
-env = gym.make(GYM_ENV_MAP[game], mode = 0,difficulty = 0, full_action_space=True, frameskip=1)
+env = gym.make(GYM_ENV_MAP[game],mode = 0,difficulty = 0, full_action_space=True, frameskip=1,max_episode_steps=20000)
 env = FrameStack(env, 4)
 # env = RecordVideo(env,env_name)
 # print(env._env_info())
@@ -109,39 +109,39 @@ for i_episode in range(start_episode,end_episode,1):
       motion_gate_count += 1
 
 
-    obs = cv2.resize(obs[-1],(160,210))
-    obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
+    # obs = cv2.resize(obs[-1],(160,210))
+    # obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
 
 
-    gaze_true = gaze.squeeze().cpu().numpy()
-    if np.max(gaze_true) - np.min(gaze_true) == 0:
-      gaze_true = np.zeros_like(gaze_true)
-    else:
-      gaze_true = (gaze_true - np.min(gaze_true)) / (np.max(gaze_true) - np.min(gaze_true))
+    # gaze_true = gaze.squeeze().cpu().numpy()
+    # if np.max(gaze_true) - np.min(gaze_true) == 0:
+    #   gaze_true = np.zeros_like(gaze_true)
+    # else:
+    #   gaze_true = (gaze_true - np.min(gaze_true)) / (np.max(gaze_true) - np.min(gaze_true))
 
-    gaze_true = np.array(cv2.resize(gaze_true,(160,210))*255,dtype=np.uint8)
-    gaze_true = cv2.applyColorMap(gaze_true,cv2.COLORMAP_OCEAN)
-
-
-    motion_true = motion.squeeze().cpu().numpy()
-    if np.max(motion_true) - np.min(motion_true) == 0:
-      motion_true = np.zeros_like(motion_true)
-    else:
-      motion_true = (motion_true - np.min(motion_true)) / (np.max(motion_true) - np.min(motion_true))
-
-    motion_true = np.array(cv2.resize(motion_true,(160,210))*255,dtype=np.uint8)
-    motion_true = cv2.applyColorMap(motion_true,cv2.COLORMAP_HOT)
+    # gaze_true = np.array(cv2.resize(gaze_true,(160,210))*255,dtype=np.uint8)
+    # gaze_true = cv2.applyColorMap(gaze_true,cv2.COLORMAP_OCEAN)
 
 
-    gaze_ = cv2.addWeighted(gaze_true,0.5*action_net.gaze_gate_output[0],obs,0.5,0)*2
-    motion_ = cv2.addWeighted(motion_true,0.5*action_net.motion_gate_output[0],obs,0.5,0)*2
-    gaze_ = cv2.resize(gaze_,(480,630)) 
-    motion_ = cv2.resize(motion_,(480,630)) 
-    cv2.imshow("gaze_and_motion_normalized", cv2.addWeighted(gaze_,0.5,motion_,0.5,0))
-    # cv2.imshow("motion_pred_normalized",motion_)
-    # cv2.imshow("gaze_pred_normalized",gaze_)
-    # cv2.imshow("obs",obs)
-    cv2.waitKey(1)
+    # motion_true = motion.squeeze().cpu().numpy()
+    # if np.max(motion_true) - np.min(motion_true) == 0:
+    #   motion_true = np.zeros_like(motion_true)
+    # else:
+    #   motion_true = (motion_true - np.min(motion_true)) / (np.max(motion_true) - np.min(motion_true))
+
+    # motion_true = np.array(cv2.resize(motion_true,(160,210))*255,dtype=np.uint8)
+    # motion_true = cv2.applyColorMap(motion_true,cv2.COLORMAP_HOT)
+
+
+    # gaze_ = cv2.addWeighted(gaze_true,0.5*action_net.gaze_gate_output[0],obs,0.5,0)*2
+    # motion_ = cv2.addWeighted(motion_true,0.5*action_net.motion_gate_output[0],obs,0.5,0)*2
+    # gaze_ = cv2.resize(gaze_,(480,630)) 
+    # motion_ = cv2.resize(motion_,(480,630)) 
+    # cv2.imshow("gaze_and_motion_normalized", cv2.addWeighted(gaze_,0.5,motion_,0.5,0))
+    # # cv2.imshow("motion_pred_normalized",motion_)
+    # # cv2.imshow("gaze_pred_normalized",gaze_)
+    # # cv2.imshow("obs",obs)
+    # cv2.waitKey(1)
 
 
     action = action_net.process_activations_for_inference(acts)

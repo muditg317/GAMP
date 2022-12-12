@@ -20,7 +20,7 @@ args = parser.parse_args()
 game: game_t = args.game
 
 MODE: run_mode_t = args.mode
-completed_epochs = 34 # 24 is the best for centipede.05 
+completed_epochs = 36 # 24 is the best for centipede.05 
 
 if game == 'phoenix':
   
