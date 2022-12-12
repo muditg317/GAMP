@@ -36,7 +36,7 @@ if args.gaze_net_cpt:
   gaze_net_cpt = args.gaze_net_cpt
 else:
   gaze_net_cpt = GAME_MODEL[game]['CNN_GazeNet']  
-
+episode = args.episode
 
 device = torch.device('cuda')
 
@@ -71,7 +71,7 @@ action_net.gaze_pred_model = gaze_net
 action_net.gaze_pred_model.load_model_at_epoch(gaze_net_cpt)
 action_net.gaze_pred_model.eval()
 
-env = gym.make(GYM_ENV_MAP[game],mode = 7,difficulty = 1, full_action_space=True, frameskip=1)
+env = gym.make(GYM_ENV_MAP[game],mode = 0,difficulty = 0, full_action_space=True, frameskip=1)
 env = FrameStack(env, 4)
 # env = RecordVideo(env,env_name)
 # print(env._env_info())
