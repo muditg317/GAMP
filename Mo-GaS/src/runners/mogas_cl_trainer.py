@@ -28,6 +28,7 @@ completed_epochs = {
     '150_KM_3357098_Dec-15-10-59-11': 21,
   },
   'freeway': {
+    'combined':37,
     '79_RZ_3074177_Aug-18-11-46-29': 107,
   },
   'phoenix': {
@@ -81,6 +82,10 @@ elif game == 'demon_attack':
 elif game == 'centipede':
   train_datasets = ['150_KM_3357098_Dec-15-10-59-11']
   val_datasets = ['150_KM_3357098_Dec-15-10-59-11']
+
+if game == 'freeway':
+  train_datasets = ['combined']
+  train_datasets = ['combined']
 
 # val_datasets = ['']
 device = torch.device('cuda')
