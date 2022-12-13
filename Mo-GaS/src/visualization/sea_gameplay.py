@@ -9,6 +9,8 @@ from src.features.feat_utils import image_transforms
 
 import torch
 
+import logging
+
 import gym
 from gym.wrappers import FrameStack
 
@@ -26,6 +28,7 @@ parser.add_argument('--game',required=True)
 parser.add_argument('--action_cpt',type=int)
 parser.add_argument('--gaze_net_cpt',type=int)
 parser.add_argument('--episode',default=None,type=int)
+parser.add_argument('visualize', default = False )
 args = parser.parse_args()
 game:game_t = args.game
 if args.action_cpt:
@@ -79,12 +82,14 @@ env = FrameStack(env, 4)
 t_rew = 0
 total_t = 0
 total_gaze_gate_count = 0
+
 if episode is None:
   start_episode = 0
-  end_episode = 300
+  end_episode = 30
 else:
   start_episode = episode
   end_episode = start_episode+1
+rew_arr = np.zeros(end_episode)
 for i_episode in range(start_episode,end_episode,1):
   env.seed(i_episode)
   # env.render(mode = 'human')
@@ -123,22 +128,22 @@ for i_episode in range(start_episode,end_episode,1):
     # gaze_ = np.array(cv2.resize(gaze_,(160,210))*255,dtype=np.uint8)
     # gaze_ = cv2.applyColorMap(gaze_,cv2.COLORMAP_TURBO)
 
-    obs = cv2.resize(obs[-1],(160,210))
-    obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
-    # gaze_ = cv2.addWeighted(gaze_,0.25,obs,0.5,0)*2
+    # obs = cv2.resize(obs[-1],(160,210))
+    # obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
+    # # gaze_ = cv2.addWeighted(gaze_,0.25,obs,0.5,0)*2
 
-    gaze_true = gaze.squeeze().cpu().numpy()
-    # gaze_true = (gaze / observation).squeeze().cpu().numpy()
-    gaze_true = (gaze_true - np.min(gaze_true)) / (np.max(gaze_true) - np.min(gaze_true))
+    # gaze_true = gaze.squeeze().cpu().numpy()
+    # # gaze_true = (gaze / observation).squeeze().cpu().numpy()
+    # gaze_true = (gaze_true - np.min(gaze_true)) / (np.max(gaze_true) - np.min(gaze_true))
 
-    gaze_true = np.array(cv2.resize(gaze_true,(160,210))*255,dtype=np.uint8)
-    gaze_true = cv2.applyColorMap(gaze_true,cv2.COLORMAP_TURBO)
+    # gaze_true = np.array(cv2.resize(gaze_true,(160,210))*255,dtype=np.uint8)
+    # gaze_true = cv2.applyColorMap(gaze_true,cv2.COLORMAP_TURBO)
     
-    gaze_ = cv2.addWeighted(gaze_true,0.25*action_net.gate_output[0],obs,0.5,0)*2
+    # gaze_ = cv2.addWeighted(gaze_true,0.25*action_net.gate_output[0],obs,0.5,0)*2
 
-    gaze_ = cv2.resize(gaze_,(480,630))
-    cv2.imshow("gaze_pred_normalized",gaze_)
-    cv2.waitKey(1)
+    # gaze_ = cv2.resize(gaze_,(480,630))
+    # cv2.imshow("gaze_pred_normalized",gaze_)
+    # cv2.waitKey(1)
     
     action = action_net.process_activations_for_inference(acts)
     if game == 'breakout' and np.random.random() < 0.1:
@@ -150,6 +155,7 @@ for i_episode in range(start_episode,end_episode,1):
       # print("Episode finished after {} timesteps".format(t + 1))
       break
   t_rew += ep_rew
+  rew_arr[i_episode] = ep_rew
   total_t += t
   total_gaze_gate_count += gaze_gate_count
   print(f"Episode {i_episode} finished...")
@@ -160,5 +166,7 @@ for i_episode in range(start_episode,end_episode,1):
   print(f"\tAvg reward {t_rew/(i_episode+1)}")
   print(f"\tAvg gaze gate frequency {total_gaze_gate_count/total_t}")
 
+
 print("Mean all Episode {} reward {}".format(i_episode, t_rew / (i_episode+1)))
+print(f"Standard Deviation {np.std(rew_arr)}")
 env.close()
