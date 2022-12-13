@@ -70,9 +70,12 @@ env = FrameStack(env, 4)
 # print(env._env_info())
 
 t_rew = 0
+total_t = 0
+total_gaze_gate_count = 0
+total_motion_gate_count = 0
 if episode is None:
   start_episode = 0
-  end_episode = 30
+  end_episode = 300
 else:
   start_episode = episode
   end_episode = start_episode+1
@@ -99,64 +102,70 @@ for i_episode in range(start_episode,end_episode,1):
     if action_net.motion_gate_output[0] > 0.5:
       motion_gate_count += 1
 
-    obs = cv2.resize(obs[-1],(160,210))
-    obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
+    # obs = cv2.resize(obs[-1],(160,210))
+    # obs = cv2.cvtColor(obs,cv2.COLOR_RGB2BGR)
 
 
-    gaze_true = gaze.squeeze().cpu().numpy()
-    if np.max(gaze_true) - np.min(gaze_true) == 0:
-      gaze_true = np.zeros_like(gaze_true)
-    else:
-      gaze_true = (gaze_true - np.min(gaze_true)) / (np.max(gaze_true) - np.min(gaze_true))
+    # gaze_true = gaze.squeeze().cpu().numpy()
+    # if np.max(gaze_true) - np.min(gaze_true) == 0:
+    #   gaze_true = np.zeros_like(gaze_true)
+    # else:
+    #   gaze_true = (gaze_true - np.min(gaze_true)) / (np.max(gaze_true) - np.min(gaze_true))
 
-    gaze_true = np.array(cv2.resize(gaze_true,(160,210))*255,dtype=np.uint8)
-    gaze_true = cv2.applyColorMap(gaze_true,cv2.COLORMAP_OCEAN)
-
-
-    motion_true = motion.squeeze().cpu().numpy()
-    if np.max(motion_true) - np.min(motion_true) == 0:
-      motion_true = np.zeros_like(motion_true)
-    else:
-      motion_true = (motion_true - np.min(motion_true)) / (np.max(motion_true) - np.min(motion_true))
-
-    motion_true = np.array(cv2.resize(motion_true,(160,210))*255,dtype=np.uint8)
-    motion_true = cv2.applyColorMap(motion_true,cv2.COLORMAP_HOT)
+    # gaze_true = np.array(cv2.resize(gaze_true,(160,210))*255,dtype=np.uint8)
+    # gaze_true = cv2.applyColorMap(gaze_true,cv2.COLORMAP_OCEAN)
 
 
-    gaze_ = cv2.addWeighted(gaze_true,0.25*action_net.gaze_gate_output[0],obs,0.5,0)*2
-    motion_ = cv2.addWeighted(motion_true,0.25*action_net.motion_gate_output[0],obs,0.5,0)*2
+    # motion_true = motion.squeeze().cpu().numpy()
+    # if np.max(motion_true) - np.min(motion_true) == 0:
+    #   motion_true = np.zeros_like(motion_true)
+    # else:
+    #   motion_true = (motion_true - np.min(motion_true)) / (np.max(motion_true) - np.min(motion_true))
 
-    cv2.imshow("gaze_and_motion_normalized", cv2.addWeighted(gaze_,0.5,motion_,0.5,0))
-    # cv2.imshow("motion_pred_normalized",motion_)
-    # cv2.imshow("gaze_pred_normalized",gaze_)
-    # cv2.imshow("obs",obs)
-    cv2.waitKey(1)
+    # motion_true = np.array(cv2.resize(motion_true,(160,210))*255,dtype=np.uint8)
+    # motion_true = cv2.applyColorMap(motion_true,cv2.COLORMAP_HOT)
+
+
+    # gaze_ = cv2.addWeighted(gaze_true,0.25*action_net.gaze_gate_output[0],obs,0.5,0)*2
+    # motion_ = cv2.addWeighted(motion_true,0.25*action_net.motion_gate_output[0],obs,0.5,0)*2
+
+    # cv2.imshow("gaze_and_motion_normalized", cv2.addWeighted(gaze_,0.5,motion_,0.5,0))
+    # # cv2.imshow("motion_pred_normalized",motion_)
+    # # cv2.imshow("gaze_pred_normalized",gaze_)
+    # # cv2.imshow("obs",obs)
+    # cv2.waitKey(1)
 
 
     action = action_net.process_activations_for_inference(acts)
-    if game == 'breakout':
-      if action == ACTIONS_ENUM['PLAYER_A_FIRE']:
-        # print(f"{t}: Agent tried to fire")
-        if np.sum(motion_true) == 0:
-          # print(f"{t}: No motion detected!!")
-          print(f"{t}: Agent tried to fire with no motion detected!!")
-        # action = ACTIONS_ENUM['NOOP']
-      if np.sum(motion_true) == 0 and np.random.random() < 0.1:
-        print(f"{t}: Forced fire")
-        action = ACTIONS_ENUM['PLAYER_A_FIRE']
+    # if game == 'breakout':
+    #   if action == ACTIONS_ENUM['PLAYER_A_FIRE']:
+    #     # print(f"{t}: Agent tried to fire")
+    #     if np.sum(motion_true) == 0:
+    #       # print(f"{t}: No motion detected!!")
+    #       print(f"{t}: Agent tried to fire with no motion detected!!")
+    #     # action = ACTIONS_ENUM['NOOP']
+    #   if np.sum(motion_true) == 0 and np.random.random() < 0.1:
+    #     print(f"{t}: Forced fire")
+    #     action = ACTIONS_ENUM['PLAYER_A_FIRE']
     observation, reward, done, trun, info = env.step(action)
 
     ep_rew += reward
-    if done or trun:
+    if done or trun or t > 18000:
       # print("Episode finished after {} timesteps".format(t + 1))
       break
   t_rew += ep_rew
+  total_t += t
+  total_gaze_gate_count += gaze_gate_count
+  total_motion_gate_count += motion_gate_count
   print(f"Episode {i_episode} finished...")
   print(f"\tLength: {t} timesteps")
   print(f"\tReward {ep_rew}")
-  print(f"\tAvg reward {t_rew/(i_episode+1)}")
   print(f"\tGaze gate frequency {gaze_gate_count}/{t} ({gaze_gate_count/t})")
   print(f"\tMotion gate frequency {motion_gate_count}/{t} ({motion_gate_count/t})")
+  print(f"\tAvg timesteps {total_t/(i_episode+1)}")
+  print(f"\tAvg reward {t_rew/(i_episode+1)}")
+  print(f"\tAvg gaze gate frequency {total_gaze_gate_count/total_t}")
+  print(f"\tAvg motion gate frequency {total_motion_gate_count/total_t}")
 
 
 print("Mean all Episode {} reward {}".format(i_episode, t_rew / (i_episode+1)))

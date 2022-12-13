@@ -61,9 +61,10 @@ env = FrameStack(env, 4)
 # print(env._env_info())
 
 t_rew = 0
+total_t = 0
 if episode is None:
   start_episode = 0
-  end_episode = 30
+  end_episode = 300
 else:
   start_episode = episode
   end_episode = start_episode+1
@@ -114,13 +115,15 @@ for i_episode in range(start_episode,end_episode,1):
     observation, reward, done, trun, info = env.step(action)
 
     ep_rew += reward
-    if done or trun:
+    if done or trun or t > 18000:
       # print("Episode finished after {} timesteps".format(t + 1))
       break
   t_rew += ep_rew
+  total_t += t
   print(f"Episode {i_episode} finished...")
   print(f"\tLength: {t} timesteps")
   print(f"\tReward {ep_rew}")
+  print(f"\tAvg timesteps {total_t/(i_episode+1)}")
   print(f"\tAvg reward {t_rew/(i_episode+1)}")
 
 
