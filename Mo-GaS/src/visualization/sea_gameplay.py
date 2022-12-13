@@ -28,7 +28,7 @@ parser.add_argument('--game',required=True)
 parser.add_argument('--action_cpt',type=int)
 parser.add_argument('--gaze_net_cpt',type=int)
 parser.add_argument('--episode',default=None,type=int)
-parser.add_argument('visualize', default = False )
+# parser.add_argument('visualize', default = False )
 args = parser.parse_args()
 game:game_t = args.game
 if args.action_cpt:
