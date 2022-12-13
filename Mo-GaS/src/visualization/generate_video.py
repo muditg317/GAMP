@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal
 
 # game_0 = 'breakout'
-game = GAMES_FOR_TRAINING[0]
+game = 'phoenix'
 VALID_ACTIONS = config_data['VALID_ACTIONS'][game]
 print(game, VALID_ACTIONS)
 # game_0_run_0
@@ -25,7 +25,7 @@ game_runs = [
 ]
 
 game_run = game_runs[0]
-game_run = '198_RZ_3877709_Dec-03-16-56-11'
+# game_run = '198_RZ_3877709_Dec-03-16-56-11'
 print(game_run)
 game_run_frames = OrderedDict({
     int(entry.split('_')[-1].split('.png')[0]): entry

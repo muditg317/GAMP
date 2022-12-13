@@ -175,6 +175,7 @@ for i_episode in range(start_episode,end_episode,1):
   print(f"\tAvg reward {t_rew/(i_episode+1)}")
   print(f"\tAvg gaze gate frequency {total_gaze_gate_count/total_t}")
   print(f"\tAvg motion gate frequency {total_motion_gate_count/total_t}")
+  print(f"\tStd reward {np.std(rew_arr)}")
 
 
 print("Mean all Episode {} reward {}".format(i_episode, t_rew / (i_episode+1)))

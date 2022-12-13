@@ -127,6 +127,7 @@ for i_episode in range(start_episode,end_episode,1):
   print(f"\tReward {ep_rew}")
   print(f"\tAvg timesteps {total_t/(i_episode+1)}")
   print(f"\tAvg reward {t_rew/(i_episode+1)}")
+  print(f"\tStd reward {np.std(rew_arr)}")
 
 
 print("Mean all Episode {} reward {}".format(i_episode, t_rew / (i_episode+1)))
