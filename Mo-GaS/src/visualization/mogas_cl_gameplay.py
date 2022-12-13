@@ -1,6 +1,7 @@
 from src.utils.config import *
 ASSERT_BEING_RUN(__name__, __file__, "This file should not be imported. It runs src/models/selective_gaze_action_net.py and visualizes the results")
 from src.data.types import *
+from src.visualization.model_utils import GAME_MODEL
 from src.models.cnn_gaze_net import CNN_GazeNet
 from src.models.mogas_with_cl import SelectiveGazeAndMotion_CL_ActionNet
 from src.features.feat_utils import image_transforms
@@ -21,20 +22,26 @@ transform_images = image_transforms()
 
 parser = argparse.ArgumentParser(description='.')
 parser.add_argument('--game',required=True)
-parser.add_argument('--action_cpt',required=True,type=int)
-parser.add_argument('--gaze_net_cpt',required=True,type=int)
+parser.add_argument('--action_cpt',type=int)
+parser.add_argument('--gaze_net_cpt',type=int)
 parser.add_argument('--episode',default=None,type=int)
 args = parser.parse_args()
 game:game_t = args.game
-action_cpt = args.action_cpt
-gaze_net_cpt = args.gaze_net_cpt
+if args.action_cpt:
+  action_cpt = args.action_cpt
+else:
+  action_cpt = GAME_MODEL[game]['SelectiveGazeAndMotion_CL_ActionNet']
+if args.gaze_net_cpt:
+  gaze_net_cpt = args.gaze_net_cpt
+else:
+  gaze_net_cpt = GAME_MODEL[game]['CNN_GazeNet']  
 episode = args.episode
 
 
 device = torch.device('cuda')
 
 data_types = ['images', 'actions', 'gazes'] # unused
-dataset_train:game_run_t = '214_RZ_7226016_Jan-11-11-04-01'     # unused
+dataset_train:game_run_t = 'combined'     # unused
 dataset_val:game_run_t   = '79_RZ_3074177_Aug-18-11-46-29'     # unused
 
 gaze_net = CNN_GazeNet(game=game,
@@ -79,6 +86,7 @@ if episode is None:
 else:
   start_episode = episode
   end_episode = start_episode+1
+rew_arr = np.zeros(end_episode)
 for i_episode in range(start_episode,end_episode,1):
   env.seed(i_episode)
   # env.render(mode = 'human')
@@ -157,6 +165,7 @@ for i_episode in range(start_episode,end_episode,1):
   total_t += t
   total_gaze_gate_count += gaze_gate_count
   total_motion_gate_count += motion_gate_count
+  rew_arr[i_episode] = ep_rew
   print(f"Episode {i_episode} finished...")
   print(f"\tLength: {t} timesteps")
   print(f"\tReward {ep_rew}")
@@ -169,4 +178,5 @@ for i_episode in range(start_episode,end_episode,1):
 
 
 print("Mean all Episode {} reward {}".format(i_episode, t_rew / (i_episode+1)))
+print(f"Standard Deviation {np.std(rew_arr)}")
 env.close()

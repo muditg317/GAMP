@@ -68,6 +68,7 @@ if episode is None:
 else:
   start_episode = episode
   end_episode = start_episode+1
+rew_arr = np.zeros(end_episode)
 for i_episode in range(start_episode,end_episode,1):
   env.seed(i_episode)
   # env.render(mode = 'human')
@@ -120,6 +121,7 @@ for i_episode in range(start_episode,end_episode,1):
       break
   t_rew += ep_rew
   total_t += t
+  rew_arr[i_episode] = ep_rew
   print(f"Episode {i_episode} finished...")
   print(f"\tLength: {t} timesteps")
   print(f"\tReward {ep_rew}")
@@ -128,4 +130,5 @@ for i_episode in range(start_episode,end_episode,1):
 
 
 print("Mean all Episode {} reward {}".format(i_episode, t_rew / (i_episode+1)))
+print(f"Standard Deviation {np.std(rew_arr)}")
 env.close()

@@ -132,9 +132,8 @@ class MoGaS_Net(nn.Module, ABC):
       self.load_state_dict(model_pickle['model_state_dict'])
     except RuntimeError as e:
       print(f"RuntimeError: {e}")
-      print(f"Model may be a bit broke, Loading model with strict = False")
-      # self.load_state_dict(model_pickle['model_state_dict'],strict = False)
-      # load_optimizer = False
+      print(f"Model may be a bit broke")
+
     if load_optimizer:
       self.opt.load_state_dict(model_pickle['optimizer_state_dict'])
 
